@@ -115,13 +115,8 @@ class InferenceParser():
         default="", help='add model config caption in the out file name')
         parser.add_argument('--debug', action='store_true', help='if true, start debugging in terminal')
         parser.add_argument('--infer-data', default='coco', type=str, help='sets dataset to infer')
-        parser.add_argument('--time-sync', action='store_true')
         parser.add_argument('--warmup', action='store_true')
-        parser.add_argument('--h-crop', type=int, default=1)
-        parser.add_argument('--w-crop', type=int, default=1)
-        parser.add_argument('--resize-scale', type=str, default='origin')
         parser.add_argument('--speedup', action='store_false', help='flip false and post process default in cfg')
-        parser.add_argument('--mode', type=str, default='inference')
         
         parser.add_argument(
             '--work-dir',

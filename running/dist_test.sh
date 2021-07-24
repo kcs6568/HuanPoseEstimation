@@ -15,7 +15,7 @@ ls
 
 # # ${@:$}: other options not are explicited in the shell script command
 # python -m torch.distributed.launch --nproc_per_node=$GPUS --master_port=$PORT \
-#     $HOME/mmpose/cskim_custom/test.py $CONFIG $CHECKPOINT $GPUS --launcher pytorch ${@:4}
+#     $HOME/mmpose/brl_graph/test.py $CONFIG $CHECKPOINT $GPUS --launcher pytorch ${@:4}
 
 
 

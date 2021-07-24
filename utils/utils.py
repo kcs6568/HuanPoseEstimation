@@ -6,7 +6,7 @@ import os.path as osp
 import mmcv
 import torch
 
-from cskim_custom.utils.exception import *
+from brl_graph.utils.exception import *
 
 class TextColor:
     BRIGHT_BLACK = '\033[90m'
@@ -144,7 +144,7 @@ def get_base_all_det_info(cfg_path, detector, det_num=1):
 
 
 def make_base_path_for_pose(model, dataset, pose_cfg, pose_ckpt):
-    root = f'/root/mmpose/cskim_custom/models'
+    root = f'/root/mmpose/brl_graph/models'
     cfg_base_path = f'{root}/{model}/{dataset}/configs/{pose_cfg}'
     ckpt_base_path = f'{root}/{model}/{dataset}/ckpt/{pose_ckpt}'
 
@@ -160,62 +160,10 @@ def set_specific_gpus(device):
     elif device:  # non-cpu device requested
         os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable
         assert torch.cuda.is_available(), f'CUDA unavailable, invalid device {device} requested'  # check availability
-
-
-def calculate_time(
-    correct_data_len,
-    det_time_results,
-    pose_time_results):
-    det_total_time = sum(det_time_results)
-    det_mean_time = round((det_total_time/correct_data_len)*(1e-3), 4)
-    det_total_time = round(det_total_time*(1e-3), 4)
-
-    pose_total_time = sum(pose_time_results)
-    pose_mean_time = round((pose_total_time/correct_data_len)*(1e-3), 4)
-    pose_total_time = round(pose_total_time*(1e-3), 4)
-
-    all_time_results = []
-    for each_time in zip(det_time_results, pose_time_results):
-        all_time_results.append(sum(each_time))
-    
-    all_total_time = sum(all_time_results)
-    all_mean_time = round((all_total_time/correct_data_len)*(1e-3), 4)
-    all_total_time = round(all_total_time*(1e-3), 4)
-    
-    
-
-    return det_total_time, det_mean_time, pose_total_time, pose_mean_time, all_total_time, all_mean_time
+   
 
 def save_error_info(save_path, img_path, img_name):
     error_save_path = osp.join(save_path, f'{img_name}.png')
     img = mmcv.imread(img_path)
     mmcv.imwrite(img, error_save_path)
     
-
-
-def is_cropping(resize_scale, h_crop, w_crop):
-    if resize_scale == 'origin':
-        assert (h_crop == 1 and w_crop == 1), (
-            f'the resize scale is origin, but both H and W rate are not 1'
-        )
-        is_crop = False
-
-    elif resize_scale == 'cropped':
-        assert (h_crop > 1 or w_crop > 1), (
-            f'the resize scale is cropped, but both H and W rate are 1'
-        )
-        is_crop = True
-
-    # if not integer, it will raise "ValueError" because of not correct input
-    elif isinstance(int(resize_scale), int):
-        assert int(resize_scale) > 32, (
-            f'the specific resize scale value is too small (value: {resize_scale})')
-        assert int(resize_scale) > 1, (
-            f'the specific resize scale value is negative value (value: {resize_scale})')
-        is_crop = True
-
-    else:
-        raise CropSettingError(
-                f"the current value of argument [resize_scale] is {resize_scale}")
-
-    return is_crop

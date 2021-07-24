@@ -161,53 +161,9 @@ def inference_detector(model, imgs):
     det_time_sec = start.elapsed_time(end)
 
     if not is_batch:
-        return results[0], det_time_sec# type: list
+        return results[0]# type: list
     else:
-        return results, det_time_sec # type: list
-
-
-      
-def _get_cropped_box(human_bboxes, h_rate, w_rate):
-    full_box_results = []
-    crop_box_results = []
-
-    for bbox in human_bboxes:
-        # full_box = {}
-        # full_box['bbox'] = bbox
-        # full_box_results.append(full_box)
-
-        bbox_score = bbox[4]
-        box_crop_h = (bbox[3] - bbox[1]) / h_rate
-        box_crop_w = (bbox[2] - bbox[0]) / w_rate
-
-        # ex) h_rate: 4 / w_rate: 4 ==> 16 points
-        std_topleft_x = bbox[0]
-        std_topleft_y = bbox[1]
-        for h in range(h_rate):
-            tmp_x = std_topleft_x
-            tmp_y = std_topleft_y
-
-            for w in range(w_rate):
-                crop_box = {}
-
-                bottomright_x = tmp_x + (box_crop_w)
-                bottomright_y = tmp_y + (box_crop_h)
-
-                crop_box['bbox'] = [
-                    tmp_x, tmp_y, 
-                    bottomright_x, bottomright_y, 
-                    bbox_score, [int(box_crop_h), int(box_crop_w)]
-                    ]
-                crop_box_results.append(crop_box)
-
-                # the value of tmp_y is fixed
-                tmp_x += box_crop_w
-
-            # the value of std_topleft_x is fixed
-            std_topleft_y += box_crop_h
-            
-
-    return crop_box_results
+        return results # type: list
 
 
 def _get_bboxes_in_multi_images(det_results, cat_id):
@@ -229,12 +185,7 @@ def _get_bboxes_in_single_image(human_bboxes):
     return person_results
 
 
-def process_mmdet_results(
-    mmdet_results, 
-    is_crop, 
-    h_rate,
-    w_rate,
-    cat_id=1):
+def process_mmdet_results(mmdet_results, cat_id=1):
     """Process mmdet results, and return a list of bboxes.
 
     :param mmdet_results:
@@ -250,16 +201,9 @@ def process_mmdet_results(
 
     human_bboxes = det_results[cat_id - 1]
 
-    if is_crop:
-        crop_box_results = _get_cropped_box(
-            human_bboxes, h_rate, w_rate)
-        
-        return crop_box_results
-        
-    else:
-        person_results = _get_bboxes_in_single_image(human_bboxes)
-        
-        return person_results
+    person_results = _get_bboxes_in_single_image(human_bboxes)
+    
+    return person_results
 
 
 async def async_inference_detector(model, imgs):
@@ -422,8 +366,8 @@ def show_result(img,
 def run_detection(detector, img):
     start = torch.cuda.Event(enable_timing=True)
     end = torch.cuda.Event(enable_timing=True)
-    mmdet_results, det_infer_time = inference_detector(detector, img)
+    mmdet_results = inference_detector(detector, img)
 
-    return mmdet_results, det_infer_time
+    return mmdet_results
 
 

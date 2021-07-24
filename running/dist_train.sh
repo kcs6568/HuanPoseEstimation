@@ -14,6 +14,6 @@ PYTHONPATH="$(dirname $0)/..":$PYTHONPATH \
 # ls ./$(dirname $1)/..
 
 python -m torch.distributed.launch --nproc_per_node=$GPUS --master_port=$PORT \
-    $HOME/mmpose/cskim_custom/running/train.py $CONFIG $DATASET $CFGNUM --launcher pytorch ${@:5}
+    $HOME/mmpose/brl_graph/running/train.py $CONFIG $DATASET $CFGNUM --launcher pytorch ${@:5}
     
     

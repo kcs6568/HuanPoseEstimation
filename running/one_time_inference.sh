@@ -12,4 +12,4 @@ PYTHONPATH="$(dirname $0)/..":$PYTHONPATH \
 # echo $DATA
 
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=$PORT \
-    $HOME/mmpose/cskim_custom/running/one_time_inference.py $CONFIG $CHECKPOINT $IMG ${@:4}
+    $HOME/mmpose/brl_graph/running/one_time_inference.py $CONFIG $CHECKPOINT $IMG ${@:4}

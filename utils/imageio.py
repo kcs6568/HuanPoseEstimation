@@ -11,13 +11,9 @@ def draw_box_results(
     det_results, 
     det_save_path,
     bbox_thr,
-    naming_info=None,
     only_person=True):
     img_name = osp.splitext(osp.basename(img))[0]
-    if naming_info is not None:
-        vis_name = f"vis_det_{img_name}_H{naming_info[0]}_W{naming_info[1]}_thr{naming_info[2]}.png"
-    else:
-        vis_name = f'vis_error_det_{img_name}.png'
+    vis_name = f'vis_error_det_{img_name}.png'
     out_file = osp.join(det_save_path, vis_name)
 
     show_result(img,
@@ -37,14 +33,9 @@ def draw_pose_results_with_box(
     kpt_score_thr,
     dataset,
     show,
-    pose_save_path,
-    naming_info=None):
+    pose_save_path):
     img_name = osp.splitext(osp.basename(img))[0]
-
-    if naming_info is not None:
-        vis_name = f"vis_pose_{img_name}_H{naming_info[0]}_W{naming_info[1]}_thr{naming_info[2]}.png"
-    else:
-        vis_name = f'vis_error_pose_{img_name}.png'
+    vis_name = f'vis_error_pose_{img_name}.png'
     out_file = osp.join(pose_save_path, vis_name)
 
     vis_pose_result(

@@ -131,7 +131,6 @@ def _box2cs(cfg, box):
 def inference_top_down_pose_model(model,
                                   img_or_path,
                                   person_results,
-                                  resize_scale,
                                   bbox_thr=None,
                                   format='xywh',
                                   dataset='TopDownCocoDataset',
@@ -186,38 +185,7 @@ def inference_top_down_pose_model(model,
 
     # Change for-loop preprocess each bbox to preprocess all bboxes at once.
     
-    ################################## Origin ###################################
-    # bboxes1 = np.array([box['bbox'][:5] for box in person_results])
-    # bboxes_resizing1 = np.array([box['bbox'][5] for box in person_results])
-    #############################################################################
-
-    bboxes = []
-    bboxes_resizing = []
-    for box in person_results:
-        bboxes.append(box['bbox'][:5])
-
-        box_size = np.shape(box['bbox'])[0]
-
-        # basic bbox info only e.g. not cropping bounding box
-        if resize_scale == 'origin':
-            assert box_size == 5, (
-                f"bbox shape is expected 5, but got {box_size}")
-            resizing = model.cfg.data_cfg['image_size']
-        
-        # basic bbox info + resize_scale e.g. cropping bounding box
-        elif resize_scale == 'cropped':
-            assert box_size == 6, (
-                f"bbox shape is expected 6, but got {box_size}")
-            resizing = box['bbox'][5]
-        elif isinstance(int(resize_scale), int):
-            resizing = [int(resize_scale)]*2
-        # else:
-        #     resizing = box['bbox'][5]
-        
-        bboxes_resizing.append(resizing)
-
-    bboxes = np.array(bboxes)
-    bboxes_resizing = np.array(bboxes_resizing)
+    bboxes = np.array([box['bbox'][:5] for box in person_results])
     
     # Select bboxes by score threshold
     if bbox_thr is not None:
@@ -245,7 +213,6 @@ def inference_top_down_pose_model(model,
             model,
             img_or_path,
             bboxes_xywh,
-            bboxes_resizing,
             dataset,
             return_heatmap=return_heatmap)
 
@@ -401,7 +368,6 @@ def _xywh2xyxy(bbox_xywh):
 def _inference_single_pose_model(model,
                                  img_or_path,
                                  bboxes,
-                                 bboxes_resizing,
                                  dataset,
                                  return_heatmap=False):
     """Inference a single bbox.
@@ -845,8 +811,7 @@ def vis_pose_result(model,
 def run_human_pose_estimation(
     pose_model,
     img,
-    cropped_human_boxes,
-    resize_scale,
+    human_boxes,
     bbox_thr,
     dataset,
     format='xyxy',
@@ -858,8 +823,7 @@ def run_human_pose_estimation(
     pose_results, heatmap, pose_infer_time = inference_top_down_pose_model(
             pose_model,
             img,
-            cropped_human_boxes,
-            resize_scale,
+            human_boxes,
             bbox_thr,
             format='xyxy',
             dataset=dataset,
@@ -869,6 +833,6 @@ def run_human_pose_estimation(
     torch.cuda.synchronize()
     
  
-    return pose_results, heatmap, pose_infer_time
+    return pose_results, heatmap
 
 
