@@ -44,6 +44,7 @@ def main():
     pose_cfg, pose_ckpt = get_base_pose_info(cfg_path, args().model, args().dataset, args().cfgnum)
     
     cfg = Config.fromfile(pose_cfg) 
+    cfg.data_cfg['num_joints'] = 1
     pose_cfg_name = osp.splitext(osp.basename(pose_cfg))[0]
     
     pose_model = init_pose_model(

@@ -13,7 +13,7 @@ def draw_box_results(
     bbox_thr,
     only_person=True):
     img_name = osp.splitext(osp.basename(img))[0]
-    vis_name = f'vis_error_det_{img_name}.png'
+    vis_name = f'vis_det_{img_name}.png'
     out_file = osp.join(det_save_path, vis_name)
 
     show_result(img,
@@ -35,7 +35,7 @@ def draw_pose_results_with_box(
     show,
     pose_save_path):
     img_name = osp.splitext(osp.basename(img))[0]
-    vis_name = f'vis_error_pose_{img_name}.png'
+    vis_name = f'vis_pose_{img_name}.png'
     out_file = osp.join(pose_save_path, vis_name)
 
     vis_pose_result(
