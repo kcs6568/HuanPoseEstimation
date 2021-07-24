@@ -82,6 +82,11 @@ def init_pose_model(config, checkpoint=None, apply_speedup=True, device='cuda:0'
                         f'but got {type(config)}')
     config.model.pretrained = None
     
+    config.channel_cfg['num_output_channels'] = 1
+    config.channel_cfg['dataset_joints'] = 1
+    config.channel_cfg['dataset_channel'] = [[0]]
+    config.channel_cfg['inference_channel'] = [0]
+
     if apply_speedup:
         config.model.test_cfg['flip_test'] = False
         config.model.test_cfg['post_process'] = 'default'
@@ -523,6 +528,7 @@ def _inference_single_pose_model(model,
         data = test_pipeline(data)
         batch_data.append(data)
 
+    print(data['ann_info'])
     # create batch data per box
     # (if h crop is 3 and w crop is 3, the size of batch_data is 3*3=18)
  

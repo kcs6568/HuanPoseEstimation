@@ -44,7 +44,6 @@ def main():
     pose_cfg, pose_ckpt = get_base_pose_info(cfg_path, args().model, args().dataset, args().cfgnum)
     
     cfg = Config.fromfile(pose_cfg) 
-    cfg.data_cfg['num_joints'] = 1
     pose_cfg_name = osp.splitext(osp.basename(pose_cfg))[0]
     
     pose_model = init_pose_model(
@@ -53,6 +52,8 @@ def main():
         apply_speedup=args().speedup,
         device=args().device.lower())
     
+    print(pose_model.cfg.channel_cfg)
+
     if args().speedup:
         print("apply speedup")
     pose_model_type = pose_model.cfg.model.type
