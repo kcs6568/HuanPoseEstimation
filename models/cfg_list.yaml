@@ -1,0 +1,78 @@
+Models:
+  hrnet:
+    dataset:
+      coco:
+        configs:
+          1:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w32_coco_256x192.py'
+          - 
+          2:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w32_coco_384x288.py'
+          - 
+          3:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w48_coco_256x192.py'
+          - 
+          4:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w48_coco_384x288.py'
+          - 
+      mpii:
+        configs:
+          1:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hrnet_w32_mpii_256x256.py'
+          - 
+          2:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hrnet_w48_mpii_256x256.py'
+          - 
+  hourglass:
+    dataset:
+      coco:
+        configs:
+          1:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hourglass52_coco_256x256.py'
+          - 
+          2:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hourglass52_coco_384x384.py'
+          - 
+      mpii:
+        configs:
+          1: 
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hourglass52_mpii_256x256.py'
+          - 
+          2:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hourglass52_mpii_384x384.py'
+          - 
+  higherhrnet:
+    dataset:
+      coco:
+        configs:
+          1:
+          - higher_hrnet32_coco_512x512.py
+          - higher_hrnet32_coco_512x512-8ae85183_20200713.pth
+          2: 
+          - higher_hrnet32_coco_640x640.py
+          - higher_hrnet32_coco_640x640-a22fe938_20200712.pth
+          3:
+          - higher_hrnet48_coco_512x512.py
+          - higher_hrnet48_coco_512x512-60fedcbc_20200712.pth
+          4:
+          - higher_hrnet48_coco_640x640.py
+          - 
+  rsn:
+    dataset:
+      coco:
+        configs:
+          1:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/rsn18_coco_256x192.py'
+          - 
+          2:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/rsn50_coco_256x192.py'
+          - 
+          3:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/2xrsn50_coco_256x192.py'
+          - 
+          4:
+          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/3xrsn50_coco_256x192.py'
+          - 
+          
+           
+          
