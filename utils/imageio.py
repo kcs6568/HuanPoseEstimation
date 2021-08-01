@@ -42,10 +42,10 @@ def draw_pose_results_with_box(
         pose_model,
         img,
         pose_results,
-        radius,
-        thickness,
-        kpt_score_thr,
-        dataset,
-        show,
-        out_file)
+        radius=radius,
+        thickness=thickness,
+        kpt_score_thr=kpt_score_thr,
+        dataset=dataset,
+        show=show,
+        out_file=out_file)
 

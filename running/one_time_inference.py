@@ -53,6 +53,7 @@ def main():
         device=args().device.lower())
     
     print(pose_model.cfg.channel_cfg)
+    print(pose_model.cfg.model.test_cfg)
 
     if args().speedup:
         print("apply speedup")
@@ -127,7 +128,7 @@ def main():
                                 dataset=dataset,
                                 return_heatmap=return_heatmap,
                                 outputs=output_layer_names)
-
+                #TODO keypoint에 대한 skeleton 예측 결과 그리는 부분 추가
                 # save some results
                 # visualize results
                 if args().det_save:

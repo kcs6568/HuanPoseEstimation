@@ -82,10 +82,10 @@ def init_pose_model(config, checkpoint=None, apply_speedup=True, device='cuda:0'
                         f'but got {type(config)}')
     config.model.pretrained = None
     
-    config.channel_cfg['num_output_channels'] = 1
-    config.channel_cfg['dataset_joints'] = 1
-    config.channel_cfg['dataset_channel'] = [[0]]
-    config.channel_cfg['inference_channel'] = [0]
+    # config.channel_cfg['num_output_channels'] = 1
+    # config.channel_cfg['dataset_joints'] = 1
+    # config.channel_cfg['dataset_channel'] = [[0]]
+    # config.channel_cfg['inference_channel'] = [0]
 
     if apply_speedup:
         config.model.test_cfg['flip_test'] = False
@@ -94,7 +94,11 @@ def init_pose_model(config, checkpoint=None, apply_speedup=True, device='cuda:0'
     model = build_posenet(config.model)
     if checkpoint is not None:
         # load model checkpoint
+        # path: mmcv->runner->checkpoint.py: load_checkpoint function in CheckpointLoader class
         load_checkpoint(model, checkpoint, map_location=device)
+        print("Checkpoint")
+        print(load_checkpoint)
+        # error occured when the keypoint value in config file is modified
     # save the config in the model for convenience
     model.cfg = config
     model.to(device)
@@ -528,7 +532,7 @@ def _inference_single_pose_model(model,
         data = test_pipeline(data)
         batch_data.append(data)
 
-    print(data['ann_info'])
+    
     # create batch data per box
     # (if h crop is 3 and w crop is 3, the size of batch_data is 3*3=18)
  
@@ -568,6 +572,7 @@ def vis_pose_result(model,
                     thickness=1,
                     kpt_score_thr=0.3,
                     dataset='TopDownCocoDataset',
+                    use_skeleton=False,
                     show=False,
                     out_file=None):
     """Visualize the detection results on the image.
@@ -596,206 +601,217 @@ def vis_pose_result(model,
                         [51, 255, 51], [0, 255, 0], [0, 0, 255], [255, 0, 0],
                         [255, 255, 255]])
 
-    if dataset in ('TopDownCocoDataset', 'BottomUpCocoDataset',
-                   'TopDownOCHumanDataset', 'AnimalMacaqueDataset'):
-        # show the results
-        skeleton = [
-            [16, 14], [14, 12], [17, 15], [15, 13],
-            [12, 13], [6, 12], [7, 13], [6, 7],
-            [6, 8], [7, 9], [8, 10], [9, 11],
-            [2, 3], [1, 2], [1, 3], [2, 4],
-            [3, 5], [4, 6], [5, 7]
-        ]
-        # In this order, evrey keypoint are connected to make skeleton.
-        # [left ankle, left knee], [left knee, left hip], [right ankle, right knee], [right knee, right hip],
-        # [left hip, right hip], [left shoulder, left hip], [right shoulder, right hip], [left shoulder, right shoulder],
-        # [left shoulder, left elbow], [right shoulder, right elbow], [left elbow, left wrist], [right elbow, right wrist],
-        # [left eye, right eye], [nose, left eye], [nose, right eye], [left eye, left ear],
-        # [right eye, right ear], [left ear, left shoulder], [right ear, right shoulder]
+    if use_skeleton:
+        if dataset in ('TopDownCocoDataset', 'BottomUpCocoDataset',
+                    'TopDownOCHumanDataset', 'AnimalMacaqueDataset'):
+            # show the results
+            skeleton = [
+                [16, 14], [14, 12], [17, 15], [15, 13],
+                [12, 13], [6, 12], [7, 13], [6, 7],
+                [6, 8], [7, 9], [8, 10], [9, 11],
+                [2, 3], [1, 2], [1, 3], [2, 4],
+                [3, 5], [4, 6], [5, 7]
+            ]
+            # In this order, evrey keypoint are connected to make skeleton.
+            # [left ankle, left knee], [left knee, left hip], [right ankle, right knee], [right knee, right hip],
+            # [left hip, right hip], [left shoulder, left hip], [right shoulder, right hip], [left shoulder, right shoulder],
+            # [left shoulder, left elbow], [right shoulder, right elbow], [left elbow, left wrist], [right elbow, right wrist],
+            # [left eye, right eye], [nose, left eye], [nose, right eye], [left eye, left ear],
+            # [right eye, right ear], [left ear, left shoulder], [right ear, right shoulder]
 
 
-        # 0: blue(ankle-knee-hip) / 7: biolet(shoulder-hip) / 9: orange(shoulder-elbow-wrist) / 16: green (ear, nose, eye) 
-        pose_limb_color = palette[[
-            0, 0, 0, 0, 7, 7, 7, 9, 9, 9, 9, 9, 16, 16, 16, 16, 16, 16, 16
-        ]]
+            # 0: blue(ankle-knee-hip) / 7: biolet(shoulder-hip) / 9: orange(shoulder-elbow-wrist) / 16: green (ear, nose, eye) 
+            pose_limb_color = palette[[
+                0, 0, 0, 0, 7, 7, 7, 9, 9, 9, 9, 9, 16, 16, 16, 16, 16, 16, 16
+            ]]
 
+            # 16: green(eye, nose, ear) / 9: orange(wrist, elbow, shoulder) / 0: blue(hip, knee, ankle)
+            pose_kpt_color = palette[[
+                # 16, 16, 16, 16, 16, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0
+                16
+            ]] 
+
+        elif dataset == 'TopDownCocoWholeBodyDataset':
+            # show the results
+            skeleton = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12],
+                        [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11], [2, 3],
+                        [1, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7], [16, 18],
+                        [16, 19], [16, 20], [17, 21], [17, 22], [17, 23], [92, 93],
+                        [93, 94], [94, 95], [95, 96], [92, 97], [97, 98], [98, 99],
+                        [99, 100], [92, 101], [101, 102], [102, 103], [103, 104],
+                        [92, 105], [105, 106], [106, 107], [107, 108], [92, 109],
+                        [109, 110], [110, 111], [111, 112], [113, 114], [114, 115],
+                        [115, 116], [116, 117], [113, 118], [118, 119], [119, 120],
+                        [120, 121], [113, 122], [122, 123], [123, 124], [124, 125],
+                        [113, 126], [126, 127], [127, 128], [128, 129], [113, 130],
+                        [130, 131], [131, 132], [132, 133]]
+
+            pose_limb_color = palette[
+                [0, 0, 0, 0, 7, 7, 7, 9, 9, 9, 9, 9, 16, 16, 16, 16, 16, 16, 16] +
+                [16, 16, 16, 16, 16, 16] + [
+                    0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16,
+                    16
+                ] + [
+                    0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16,
+                    16
+                ]]
+            pose_kpt_color = palette[
+                [16, 16, 16, 16, 16, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0] +
+                [0, 0, 0, 0, 0, 0] + [19] * (68 + 42)]
+
+        elif dataset == 'TopDownAicDataset':
+            skeleton = [[3, 2], [2, 1], [1, 14], [14, 4], [4, 5], [5, 6], [9, 8],
+                        [8, 7], [7, 10], [10, 11], [11, 12], [13, 14], [1, 7],
+                        [4, 10]]
+
+            pose_limb_color = palette[[
+                9, 9, 9, 9, 9, 9, 16, 16, 16, 16, 16, 0, 7, 7
+            ]]
+            pose_kpt_color = palette[[
+                9, 9, 9, 9, 9, 9, 16, 16, 16, 16, 16, 16, 0, 0
+            ]]
+
+        elif dataset == 'TopDownMpiiDataset':
+            skeleton = [[1, 2], [2, 3], [3, 7], [7, 4], [4, 5], [5, 6], [7, 8],
+                        [8, 9], [9, 10], [9, 13], [13, 12], [12, 11], [9, 14],
+                        [14, 15], [15, 16]]
+
+            pose_limb_color = palette[[
+                16, 16, 16, 16, 16, 16, 7, 7, 0, 9, 9, 9, 9, 9, 9
+            ]]
+            pose_kpt_color = palette[[
+                16, 16, 16, 16, 16, 16, 7, 7, 0, 0, 9, 9, 9, 9, 9, 9
+            ]]
+
+        elif dataset == 'TopDownMpiiTrbDataset':
+            skeleton = [[13, 14], [14, 1], [14, 2], [1, 3], [2, 4], [3, 5], [4, 6],
+                        [1, 7], [2, 8], [7, 8], [7, 9], [8, 10], [9, 11], [10, 12],
+                        [15, 16], [17, 18], [19, 20], [21, 22], [23, 24], [25, 26],
+                        [27, 28], [29, 30], [31, 32], [33, 34], [35, 36], [37, 38],
+                        [39, 40]]
+
+            pose_limb_color = palette[[16] * 14 + [19] * 13]
+            pose_kpt_color = palette[[16] * 14 + [0] * 26]
+
+        elif dataset in ('OneHand10KDataset', 'FreiHandDataset',
+                        'PanopticDataset'):
+            skeleton = [[1, 2], [2, 3], [3, 4], [4, 5], [1, 6], [6, 7], [7, 8],
+                        [8, 9], [1, 10], [10, 11], [11, 12], [12, 13], [1, 14],
+                        [14, 15], [15, 16], [16, 17], [1, 18], [18, 19], [19, 20],
+                        [20, 21]]
+
+            pose_limb_color = palette[[
+                0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16, 16
+            ]]
+            pose_kpt_color = palette[[
+                0, 0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16,
+                16
+            ]]
+
+        elif dataset == 'InterHand2DDataset':
+            skeleton = [[1, 2], [2, 3], [3, 4], [5, 6], [6, 7], [7, 8], [9, 10],
+                        [10, 11], [11, 12], [13, 14], [14, 15], [15, 16], [17, 18],
+                        [18, 19], [19, 20], [4, 21], [8, 21], [12, 21], [16, 21],
+                        [20, 21]]
+
+            pose_limb_color = palette[[
+                0, 0, 0, 4, 4, 4, 8, 8, 8, 12, 12, 12, 16, 16, 16, 0, 4, 8, 12, 16
+            ]]
+            pose_kpt_color = palette[[
+                0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16, 16,
+                0
+            ]]
+
+        elif dataset == 'Face300WDataset':
+            # show the results
+            skeleton = []
+
+            pose_limb_color = palette[[]]
+            pose_kpt_color = palette[[19] * 68]
+            kpt_score_thr = 0
+
+        elif dataset == 'FaceAFLWDataset':
+            # show the results
+            skeleton = []
+
+            pose_limb_color = palette[[]]
+            pose_kpt_color = palette[[19] * 19]
+            kpt_score_thr = 0
+
+        elif dataset == 'FaceCOFWDataset':
+            # show the results
+            skeleton = []
+
+            pose_limb_color = palette[[]]
+            pose_kpt_color = palette[[19] * 29]
+            kpt_score_thr = 0
+
+        elif dataset == 'FaceWFLWDataset':
+            # show the results
+            skeleton = []
+
+            pose_limb_color = palette[[]]
+            pose_kpt_color = palette[[19] * 98]
+            kpt_score_thr = 0
+
+        elif dataset == 'AnimalHorse10Dataset':
+            skeleton = [[1, 2], [2, 13], [13, 17], [17, 22], [22, 18], [18, 12],
+                        [12, 11], [11, 9], [9, 10], [10, 13], [3, 4], [4, 5],
+                        [6, 7], [7, 8], [14, 15], [15, 16], [19, 20], [20, 21]]
+
+            pose_limb_color = palette[[4] * 10 + [6] * 2 + [6] * 2 + [7] * 2 +
+                                    [7] * 2]
+            pose_kpt_color = palette[[
+                4, 4, 6, 6, 6, 6, 6, 6, 4, 4, 4, 4, 4, 7, 7, 7, 4, 4, 7, 7, 7, 4
+            ]]
+
+        elif dataset == 'AnimalFlyDataset':
+            skeleton = [[2, 1], [3, 1], [4, 1], [5, 4], [6, 5], [8, 7], [9, 8],
+                        [10, 9], [12, 11], [13, 12], [14, 13], [16, 15], [17, 16],
+                        [18, 17], [20, 19], [21, 20], [22, 21], [24, 23], [25, 24],
+                        [26, 25], [28, 27], [29, 28], [30, 29], [31, 4], [32, 4]]
+
+            pose_limb_color = palette[[0] * 25]
+            pose_kpt_color = palette[[0] * 32]
+
+        elif dataset == 'AnimalLocustDataset':
+            skeleton = [[2, 1], [3, 2], [4, 3], [5, 4], [7, 6], [8, 7], [10, 9],
+                        [11, 10], [12, 11], [14, 13], [15, 14], [16, 15], [18, 17],
+                        [19, 18], [20, 19], [22, 21], [23, 22], [25, 24], [26, 25],
+                        [27, 26], [29, 28], [30, 29], [31, 30], [33, 32], [34, 33],
+                        [35, 34]]
+
+            pose_limb_color = palette[[0] * 26]
+            pose_kpt_color = palette[[0] * 35]
+
+        elif dataset == 'AnimalZebraDataset':
+            skeleton = [[2, 1], [3, 2], [4, 3], [5, 3], [6, 8], [7, 8], [8, 3],
+                        [9, 8]]
+
+            pose_limb_color = palette[[0] * 8]
+            pose_kpt_color = palette[[0] * 9]
+
+        elif dataset in 'AnimalPoseDataset':
+            skeleton = [[1, 2], [1, 3], [2, 4], [1, 5], [2, 5], [5, 6], [6, 8],
+                        [7, 8], [6, 9], [9, 13], [13, 17], [6, 10], [10, 14],
+                        [14, 18], [7, 11], [11, 15], [15, 19], [7, 12], [12, 16],
+                        [16, 20]]
+
+            pose_limb_color = palette[[0] * 20]
+            pose_kpt_color = palette[[0] * 20]
+
+        else:
+            raise NotImplementedError()
+
+    else:
+        skeleton = None
+        pose_limb_color=None
         # 16: green(eye, nose, ear) / 9: orange(wrist, elbow, shoulder) / 0: blue(hip, knee, ankle)
         pose_kpt_color = palette[[
             16, 16, 16, 16, 16, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0
+            # 16
         ]] 
-
-    elif dataset == 'TopDownCocoWholeBodyDataset':
-        # show the results
-        skeleton = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12],
-                    [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11], [2, 3],
-                    [1, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7], [16, 18],
-                    [16, 19], [16, 20], [17, 21], [17, 22], [17, 23], [92, 93],
-                    [93, 94], [94, 95], [95, 96], [92, 97], [97, 98], [98, 99],
-                    [99, 100], [92, 101], [101, 102], [102, 103], [103, 104],
-                    [92, 105], [105, 106], [106, 107], [107, 108], [92, 109],
-                    [109, 110], [110, 111], [111, 112], [113, 114], [114, 115],
-                    [115, 116], [116, 117], [113, 118], [118, 119], [119, 120],
-                    [120, 121], [113, 122], [122, 123], [123, 124], [124, 125],
-                    [113, 126], [126, 127], [127, 128], [128, 129], [113, 130],
-                    [130, 131], [131, 132], [132, 133]]
-
-        pose_limb_color = palette[
-            [0, 0, 0, 0, 7, 7, 7, 9, 9, 9, 9, 9, 16, 16, 16, 16, 16, 16, 16] +
-            [16, 16, 16, 16, 16, 16] + [
-                0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16,
-                16
-            ] + [
-                0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16,
-                16
-            ]]
-        pose_kpt_color = palette[
-            [16, 16, 16, 16, 16, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0] +
-            [0, 0, 0, 0, 0, 0] + [19] * (68 + 42)]
-
-    elif dataset == 'TopDownAicDataset':
-        skeleton = [[3, 2], [2, 1], [1, 14], [14, 4], [4, 5], [5, 6], [9, 8],
-                    [8, 7], [7, 10], [10, 11], [11, 12], [13, 14], [1, 7],
-                    [4, 10]]
-
-        pose_limb_color = palette[[
-            9, 9, 9, 9, 9, 9, 16, 16, 16, 16, 16, 0, 7, 7
-        ]]
-        pose_kpt_color = palette[[
-            9, 9, 9, 9, 9, 9, 16, 16, 16, 16, 16, 16, 0, 0
-        ]]
-
-    elif dataset == 'TopDownMpiiDataset':
-        skeleton = [[1, 2], [2, 3], [3, 7], [7, 4], [4, 5], [5, 6], [7, 8],
-                    [8, 9], [9, 10], [9, 13], [13, 12], [12, 11], [9, 14],
-                    [14, 15], [15, 16]]
-
-        pose_limb_color = palette[[
-            16, 16, 16, 16, 16, 16, 7, 7, 0, 9, 9, 9, 9, 9, 9
-        ]]
-        pose_kpt_color = palette[[
-            16, 16, 16, 16, 16, 16, 7, 7, 0, 0, 9, 9, 9, 9, 9, 9
-        ]]
-
-    elif dataset == 'TopDownMpiiTrbDataset':
-        skeleton = [[13, 14], [14, 1], [14, 2], [1, 3], [2, 4], [3, 5], [4, 6],
-                    [1, 7], [2, 8], [7, 8], [7, 9], [8, 10], [9, 11], [10, 12],
-                    [15, 16], [17, 18], [19, 20], [21, 22], [23, 24], [25, 26],
-                    [27, 28], [29, 30], [31, 32], [33, 34], [35, 36], [37, 38],
-                    [39, 40]]
-
-        pose_limb_color = palette[[16] * 14 + [19] * 13]
-        pose_kpt_color = palette[[16] * 14 + [0] * 26]
-
-    elif dataset in ('OneHand10KDataset', 'FreiHandDataset',
-                     'PanopticDataset'):
-        skeleton = [[1, 2], [2, 3], [3, 4], [4, 5], [1, 6], [6, 7], [7, 8],
-                    [8, 9], [1, 10], [10, 11], [11, 12], [12, 13], [1, 14],
-                    [14, 15], [15, 16], [16, 17], [1, 18], [18, 19], [19, 20],
-                    [20, 21]]
-
-        pose_limb_color = palette[[
-            0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16, 16
-        ]]
-        pose_kpt_color = palette[[
-            0, 0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16,
-            16
-        ]]
-
-    elif dataset == 'InterHand2DDataset':
-        skeleton = [[1, 2], [2, 3], [3, 4], [5, 6], [6, 7], [7, 8], [9, 10],
-                    [10, 11], [11, 12], [13, 14], [14, 15], [15, 16], [17, 18],
-                    [18, 19], [19, 20], [4, 21], [8, 21], [12, 21], [16, 21],
-                    [20, 21]]
-
-        pose_limb_color = palette[[
-            0, 0, 0, 4, 4, 4, 8, 8, 8, 12, 12, 12, 16, 16, 16, 0, 4, 8, 12, 16
-        ]]
-        pose_kpt_color = palette[[
-            0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12, 16, 16, 16, 16,
-            0
-        ]]
-
-    elif dataset == 'Face300WDataset':
-        # show the results
-        skeleton = []
-
-        pose_limb_color = palette[[]]
-        pose_kpt_color = palette[[19] * 68]
-        kpt_score_thr = 0
-
-    elif dataset == 'FaceAFLWDataset':
-        # show the results
-        skeleton = []
-
-        pose_limb_color = palette[[]]
-        pose_kpt_color = palette[[19] * 19]
-        kpt_score_thr = 0
-
-    elif dataset == 'FaceCOFWDataset':
-        # show the results
-        skeleton = []
-
-        pose_limb_color = palette[[]]
-        pose_kpt_color = palette[[19] * 29]
-        kpt_score_thr = 0
-
-    elif dataset == 'FaceWFLWDataset':
-        # show the results
-        skeleton = []
-
-        pose_limb_color = palette[[]]
-        pose_kpt_color = palette[[19] * 98]
-        kpt_score_thr = 0
-
-    elif dataset == 'AnimalHorse10Dataset':
-        skeleton = [[1, 2], [2, 13], [13, 17], [17, 22], [22, 18], [18, 12],
-                    [12, 11], [11, 9], [9, 10], [10, 13], [3, 4], [4, 5],
-                    [6, 7], [7, 8], [14, 15], [15, 16], [19, 20], [20, 21]]
-
-        pose_limb_color = palette[[4] * 10 + [6] * 2 + [6] * 2 + [7] * 2 +
-                                  [7] * 2]
-        pose_kpt_color = palette[[
-            4, 4, 6, 6, 6, 6, 6, 6, 4, 4, 4, 4, 4, 7, 7, 7, 4, 4, 7, 7, 7, 4
-        ]]
-
-    elif dataset == 'AnimalFlyDataset':
-        skeleton = [[2, 1], [3, 1], [4, 1], [5, 4], [6, 5], [8, 7], [9, 8],
-                    [10, 9], [12, 11], [13, 12], [14, 13], [16, 15], [17, 16],
-                    [18, 17], [20, 19], [21, 20], [22, 21], [24, 23], [25, 24],
-                    [26, 25], [28, 27], [29, 28], [30, 29], [31, 4], [32, 4]]
-
-        pose_limb_color = palette[[0] * 25]
-        pose_kpt_color = palette[[0] * 32]
-
-    elif dataset == 'AnimalLocustDataset':
-        skeleton = [[2, 1], [3, 2], [4, 3], [5, 4], [7, 6], [8, 7], [10, 9],
-                    [11, 10], [12, 11], [14, 13], [15, 14], [16, 15], [18, 17],
-                    [19, 18], [20, 19], [22, 21], [23, 22], [25, 24], [26, 25],
-                    [27, 26], [29, 28], [30, 29], [31, 30], [33, 32], [34, 33],
-                    [35, 34]]
-
-        pose_limb_color = palette[[0] * 26]
-        pose_kpt_color = palette[[0] * 35]
-
-    elif dataset == 'AnimalZebraDataset':
-        skeleton = [[2, 1], [3, 2], [4, 3], [5, 3], [6, 8], [7, 8], [8, 3],
-                    [9, 8]]
-
-        pose_limb_color = palette[[0] * 8]
-        pose_kpt_color = palette[[0] * 9]
-
-    elif dataset in 'AnimalPoseDataset':
-        skeleton = [[1, 2], [1, 3], [2, 4], [1, 5], [2, 5], [5, 6], [6, 8],
-                    [7, 8], [6, 9], [9, 13], [13, 17], [6, 10], [10, 14],
-                    [14, 18], [7, 11], [11, 15], [15, 19], [7, 12], [12, 16],
-                    [16, 20]]
-
-        pose_limb_color = palette[[0] * 20]
-        pose_kpt_color = palette[[0] * 20]
-
-    else:
-        raise NotImplementedError()
-
+        
     
     # model.show_result function path:  
     # ---> 'mmpose.models.detectors.top_down.TopDown'
