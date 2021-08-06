@@ -342,6 +342,7 @@ def show_result(img,
         if out_file is not None:
             show = False
         # draw bounding boxes
+        # mmdet->core->visualization->image.py
         img = imshow_det_bboxes(
             img,
             bboxes,

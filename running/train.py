@@ -16,8 +16,8 @@ from mmpose.datasets import build_dataset
 from mmpose.models import build_posenet
 from mmpose.utils import collect_env, get_root_logger
 
-from cskim_custom.utils.utils import *
-from cskim_custom.utils.parse import TrainParser
+from brl_graph.utils.utils import *
+from brl_graph.utils.parse import TrainParser
 
 
 def set_env_cfg_info(args):
@@ -48,15 +48,11 @@ def set_env_cfg_info(args):
 def main():
     args = TrainParser()
 
-    cfg_path = '/root/mmpose/cskim_custom/models/cfg_list.yaml'
-    
+    cfg_path = '/root/mmpose/brl_graph/models/cfg_list.yaml'
     pose_cfg, pose_ckpt = get_base_pose_info(cfg_path, args().model, args().dataset, args().cfgnum)
-    abs_pose_cfg, abs_pose_ckpt = make_base_path_for_pose(args().model, args().dataset, pose_cfg, pose_ckpt)
-
-    cfg = Config.fromfile(abs_pose_cfg) 
-    cfgfile_name = osp.splitext(osp.basename(abs_pose_cfg))[0]
-
     
+    cfg = Config.fromfile(pose_cfg) 
+    pose_cfg_name = osp.splitext(osp.basename(pose_cfg))[0]
     
     if args().cfg_options is not None:
         cfg.merge_from_dict(args().cfg_options)
@@ -68,9 +64,6 @@ def main():
     # work_dir is determined in this priority: CLI > segment in file > filename
     case_num = check_case_len(args().case)
     case = "/case_" + case_num
-    if args().work_dir:
-        cfg.work_dir = "/root/mmpose/cskim_custom/" + args().dataset + \
-        "/results/" + cfgfile_name + "/" + case + "/train_results"
 
     if args().resume_from is not None:
         cfg.resume_from = args().resume_from

@@ -13,12 +13,16 @@ class TrainParser():
     def _parse_args(self, parser):
         ### parser argument must comply with the order of input commands ###
         parser.add_argument('model', help='used model')
-        parser.add_argument('dataset', type=str)
         parser.add_argument('cfgnum', type=int)
-        parser.add_argument('--case', type=str)
-        parser.add_argument('--devices', type=str, default=None, help='the specific gpus not consecutive order')
+        # parser.add_argument('det', type=str, default=None, help='choice detector the one or all')
+        # parser.add_argument('det_cfgnum', type=int, default=1)
+        parser.add_argument('case', type=str)
+        parser.add_argument('dataset', type=str)
+        parser.add_argument('gpus_num')
+        parser.add_argument('devices', type=str, default=None, help='the specific gpus not consecutive order')
         ####################################################################
 
+        
         parser.add_argument('--weights', default=None, type=str, help='set specific weights')
         parser.add_argument('--seed', type=int, default=None, help='random seed')
         parser.add_argument('--local_rank', type=int, default=0)
@@ -85,7 +89,7 @@ class TestParser():
     pass
 
 
-class InferenceParser():
+class TopDownInferenceParser():
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='mmpose test model')
         self.args = self._parse_args(self.parser)
@@ -111,8 +115,6 @@ class InferenceParser():
         parser.add_argument('--device', type=str, default='0')
         parser.add_argument('--radius', type=int, default=6)
         parser.add_argument('--thick', type=int)
-        parser.add_argument('--caption-name', action='store_true',
-        default="", help='add model config caption in the out file name')
         parser.add_argument('--debug', action='store_true', help='if true, start debugging in terminal')
         parser.add_argument('--infer-data', default='coco', type=str, help='sets dataset to infer')
         parser.add_argument('--warmup', action='store_true')
@@ -145,6 +147,62 @@ class InferenceParser():
             default='',
             help='root of the output img file. '
             'Default not saving the visualization images.')
+        parser.add_argument(
+            '--show',
+            action='store_true',
+            default=False,
+            help='whether to show img')
+
+        args = parser.parse_args()
+        if 'LOCAL_RANK' not in os.environ:
+            os.environ['LOCAL_RANK'] = str(args.local_rank)
+
+        return args
+
+
+    def __call__(self):
+        return self.args
+
+
+class BottomUpInferenceParser():
+    def __init__(self):
+        self.parser = argparse.ArgumentParser(description='mmpose test model')
+        self.args = self._parse_args(self.parser)
+
+    
+    def _parse_args(self, parser):
+        ### self.parser argument must comply with the order of input commands ###
+        parser.add_argument('model', help='used model')
+        parser.add_argument('cfgnum', type=int)
+        parser.add_argument('dataset', type=str)
+        parser.add_argument('case', type=str)
+        parser.add_argument('img', type=str)
+        ####################################################################
+        parser.add_argument('--pose-save', action='store_true')
+        parser.add_argument('--img_root', default='/root/mmpose/test/data/mpii') # original image data directory
+        parser.add_argument('--out', help='output result file')
+        parser.add_argument('--tovolume', action='store_true')
+        parser.add_argument('--local_rank', type=int, default=0)
+        parser.add_argument('--device', type=str, default='0')
+        parser.add_argument('--radius', type=int, default=6)
+        parser.add_argument('--thick', type=int)
+        parser.add_argument('--debug', action='store_true', help='if true, start debugging in terminal')
+        parser.add_argument('--infer-data', default='coco', type=str, help='sets dataset to infer')
+        parser.add_argument('--warmup', action='store_true')
+        parser.add_argument('--speedup', action='store_false', help='flip false and post process default in cfg')
+        
+        parser.add_argument(
+            '--fuse-conv-bn',
+            action='store_true',
+            help='Whether to fuse conv and bn, this will slightly increase'
+            'the inference speed')
+        parser.add_argument(
+            '--kpt-thr', type=float, default=0.3, help='Keypoint score threshold')
+        parser.add_argument(
+            '--pose-nms-thr',
+            type=float,
+            default=0.9,
+            help='OKS threshold for pose NMS')
         parser.add_argument(
             '--show',
             action='store_true',

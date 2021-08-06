@@ -30,11 +30,13 @@ channel_cfg = dict(
     num_output_channels=17,
     dataset_joints=17,
     dataset_channel=[
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+        [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+        # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
         # [0]
     ],
     inference_channel=[
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+        16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+        # 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
         # 0
     ])
 
@@ -56,7 +58,7 @@ model = dict(
             stage2=dict(
                 num_modules=1,
                 num_branches=2,
-                block='BASIC',
+                block='BASIC', # two 3x3 conv layers are used, i.e. (conv->bn->relu)*2
                 num_blocks=(4, 4),
                 num_channels=(48, 96)),
             stage3=dict(

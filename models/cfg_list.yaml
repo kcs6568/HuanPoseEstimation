@@ -46,8 +46,8 @@ Models:
       coco:
         configs:
           1:
-          - higher_hrnet32_coco_512x512.py
-          - higher_hrnet32_coco_512x512-8ae85183_20200713.pth
+          - '/root/mmpose/brl_graph/models/higherhrnet_w48_coco_512x512.py'
+          - '/root/data/ckpt/coco/hpe/higher_hrnet48_coco_512x512-60fedcbc_20200712.pth'
           2: 
           - higher_hrnet32_coco_640x640.py
           - higher_hrnet32_coco_640x640-a22fe938_20200712.pth

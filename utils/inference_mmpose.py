@@ -96,8 +96,8 @@ def init_pose_model(config, checkpoint=None, apply_speedup=True, device='cuda:0'
         # load model checkpoint
         # path: mmcv->runner->checkpoint.py: load_checkpoint function in CheckpointLoader class
         load_checkpoint(model, checkpoint, map_location=device)
-        print("Checkpoint")
-        print(load_checkpoint)
+        # print("C[heckpoint")
+        # print(l]oad_checkpoint)
         # error occured when the keypoint value in config file is modified
     # save the config in the model for convenience
     model.cfg = config
@@ -218,7 +218,7 @@ def inference_top_down_pose_model(model,
     
     with OutputHook(model, outputs=outputs, as_tensor=False) as h:
         # poses is results['pred'] # N x 17x 3
-        poses, heatmap, pose_infer_time = _inference_single_pose_model(
+        poses, heatmap = _inference_single_pose_model(
             model,
             img_or_path,
             bboxes_xywh,
@@ -241,9 +241,10 @@ def inference_top_down_pose_model(model,
     
 
     pose_result['origin_img'] = img_or_path
-    return pose_results, returned_outputs, pose_infer_time
+    return pose_results, returned_outputs
 
 
+# TODO Bottom Up
 def inference_bottom_up_pose_model(model,
                                    img_or_path,
                                    pose_nms_thr=0.9,
@@ -562,7 +563,8 @@ def _inference_single_pose_model(model,
         torch.cuda.synchronize()
 
     pose_time_sec = start.elapsed_time(end)
-    return result['preds'], result['output_heatmap'], pose_time_sec
+
+    return result['preds'], result['output_heatmap']
 
 
 def vis_pose_result(model,
@@ -830,7 +832,7 @@ def vis_pose_result(model,
     return img
 
 
-def run_human_pose_estimation(
+def run_topdown_hpe(
     pose_model,
     img,
     human_boxes,
@@ -842,7 +844,7 @@ def run_human_pose_estimation(
     start = torch.cuda.Event(enable_timing=True)
     end = torch.cuda.Event(enable_timing=True)
     start.record()
-    pose_results, heatmap, pose_infer_time = inference_top_down_pose_model(
+    pose_results, heatmap = inference_top_down_pose_model(
             pose_model,
             img,
             human_boxes,
@@ -857,4 +859,27 @@ def run_human_pose_estimation(
  
     return pose_results, heatmap
 
+
+def run_bottomup_hpe(
+    pose_model,
+    img,
+    pose_nms_thr,
+    return_heatmap=False,
+    outputs=None):
+    start = torch.cuda.Event(enable_timing=True)
+    end = torch.cuda.Event(enable_timing=True)
+    start.record()
+    pose_results, heatmap = inference_bottom_up_pose_model(
+        pose_model,
+        img,
+        pose_nms_thr=pose_nms_thr,
+        return_heatmap=False,
+        outputs=None
+    )
+    
+    end.record()
+    torch.cuda.synchronize()
+    
+ 
+    return pose_results, heatmap
 

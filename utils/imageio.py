@@ -44,8 +44,33 @@ def draw_pose_results_with_box(
         pose_results,
         radius=radius,
         thickness=thickness,
-        kpt_score_thr=kpt_score_thr,
         dataset=dataset,
+        kpt_score_thr=kpt_score_thr,
         show=show,
         out_file=out_file)
 
+
+def draw_bottomup_pose_results(
+    pose_model,
+    img,
+    pose_results,
+    radius,
+    thickness,
+    dataset,
+    kpt_score_thr,
+    show,
+    pose_save_path):
+    img_name = osp.splitext(osp.basename(img))[0]
+    vis_name = f'vis_pose_{img_name}.png'
+    out_file = osp.join(pose_save_path, vis_name)
+
+    vis_pose_result(
+        pose_model,
+        img,
+        pose_results,
+        radius=radius,
+        thickness=thickness,
+        dataset=dataset,
+        kpt_score_thr=kpt_score_thr,
+        show=show,
+        out_file=out_file)
