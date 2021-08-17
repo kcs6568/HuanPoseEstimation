@@ -17,6 +17,7 @@ from brl_graph.utils.timer import (
     Timer, cal_total_mean_time)
 from brl_graph.utils.parser import BottomUpInferenceParser
 from brl_graph.utils.warmup_gpus import WarmUpGPUs
+from brl_graph.utils.graph import *
 
 
 def main():
@@ -31,12 +32,13 @@ def main():
     pose_model = init_pose_model(
         pose_cfg, 
         pose_ckpt,
-        apply_speedup=args().speedup,
         device=args().device.lower())
     assert pose_model.cfg.model.type=='AssociativeEmbedding', (
         "This process is applied to bottomup approach")
 
     if args().speedup:
+        pose_model.cfg.model.test_cfg['adjust']=False
+        pose_model.cfg.model.test_cfg['flip_test']=False
         print("apply speedup")
     
     dataset = pose_model.cfg.data['test']['type']
@@ -84,10 +86,9 @@ def main():
                             return_heatmap=return_heatmap,
                             outputs=output_layer_names)
 
-            #TODO keypoint에 대한 skeleton 예측 결과 그리는 부분 추가
-            # save some results
-            # visualize results
-            
+            print(pose_results)
+            matching = get_distance(pose_results)
+
             if args().pose_save:
                 if idx == 0:
                     pose_save_path = osp.join(base_save_path, 'vis_pose')
@@ -101,6 +102,7 @@ def main():
                     radius=args().radius,
                     thickness=args().radius//2,
                     dataset=dataset,
+                    pred_skeleton=matching,
                     kpt_score_thr=args().kpt_thr,
                     show=args().show,
                     pose_save_path=pose_save_path)

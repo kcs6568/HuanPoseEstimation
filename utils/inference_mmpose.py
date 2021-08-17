@@ -62,8 +62,7 @@ class PoseLoadImage:
         return results
 
 
-
-def init_pose_model(config, checkpoint=None, apply_speedup=True, device='cuda:0'):
+def init_pose_model(config, checkpoint=None, device='cuda:0'):
     """Initialize a pose model from config file.
 
     Args:
@@ -87,17 +86,11 @@ def init_pose_model(config, checkpoint=None, apply_speedup=True, device='cuda:0'
     # config.channel_cfg['dataset_channel'] = [[0]]
     # config.channel_cfg['inference_channel'] = [0]
 
-    if apply_speedup:
-        config.model.test_cfg['flip_test'] = False
-        config.model.test_cfg['post_process'] = 'default'
-
     model = build_posenet(config.model)
     if checkpoint is not None:
         # load model checkpoint
         # path: mmcv->runner->checkpoint.py: load_checkpoint function in CheckpointLoader class
         load_checkpoint(model, checkpoint, map_location=device)
-        # print("C[heckpoint")
-        # print(l]oad_checkpoint)
         # error occured when the keypoint value in config file is modified
     # save the config in the model for convenience
     model.cfg = config
@@ -311,6 +304,7 @@ def inference_bottom_up_pose_model(model,
 
     with OutputHook(model, outputs=outputs, as_tensor=False) as h:
         # forward the model
+        # mmpose->models->detectors->associative_embedding->forward_test
         with torch.no_grad():
             result = model(
                 img=data['img'],
@@ -324,8 +318,9 @@ def inference_bottom_up_pose_model(model,
         returned_outputs.append(h.layer_outputs)
 
         for idx, pred in enumerate(result['preds']):
-            area = (np.max(pred[:, 0]) - np.min(pred[:, 0])) * (
-                np.max(pred[:, 1]) - np.min(pred[:, 1]))
+            # what is area?
+            # (max coord. in x row  - min coord. in x row) * (max coord in y row - min coord in y row)
+            area = (np.max(pred[:, 0]) - np.min(pred[:, 0])) * (np.max(pred[:, 1]) - np.min(pred[:, 1])) 
             pose_results.append({
                 'keypoints': pred[:, :3],
                 'score': result['scores'][idx],
@@ -375,6 +370,7 @@ def _xywh2xyxy(bbox_xywh):
     return bbox_xyxy
 
 
+# used in top-down approach
 def _inference_single_pose_model(model,
                                  img_or_path,
                                  bboxes,
@@ -574,7 +570,7 @@ def vis_pose_result(model,
                     thickness=1,
                     kpt_score_thr=0.3,
                     dataset='TopDownCocoDataset',
-                    use_skeleton=False,
+                    pred_skeleton=None,
                     show=False,
                     out_file=None):
     """Visualize the detection results on the image.
@@ -603,7 +599,25 @@ def vis_pose_result(model,
                         [51, 255, 51], [0, 255, 0], [0, 0, 255], [255, 0, 0],
                         [255, 255, 255]])
 
-    if use_skeleton:
+    if pred_skeleton is not None:
+        skeleton = pred_skeleton[0]
+        # 0: blue(ankle-knee-hip) / 7: biolet(shoulder-hip) / 9: orange(shoulder-elbow-wrist) / 16: green (ear, nose, eye) 
+        pose_limb_color = palette[[
+            0, 0, 0, 0, 7, 7, 7, 9, 9, 9, 9, 9, 16, 16, 16, 16, 16, 16, 16
+        ]]
+
+        # print(pose_limb_color)
+
+        # print(np.shape(pose_limb_color))
+        # print(np.shape(skeleton))
+        # exit()
+
+        # 16: green(eye, nose, ear) / 9: orange(wrist, elbow, shoulder) / 0: blue(hip, knee, ankle)
+        pose_kpt_color = palette[[
+            16, 16, 16, 16, 16, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0
+        ]] 
+
+    else:
         if dataset in ('TopDownCocoDataset', 'BottomUpCocoDataset',
                     'TopDownOCHumanDataset', 'AnimalMacaqueDataset'):
             # show the results
@@ -805,14 +819,7 @@ def vis_pose_result(model,
         else:
             raise NotImplementedError()
 
-    else:
-        skeleton = None
-        pose_limb_color=None
-        # 16: green(eye, nose, ear) / 9: orange(wrist, elbow, shoulder) / 0: blue(hip, knee, ankle)
-        pose_kpt_color = palette[[
-            16, 16, 16, 16, 16, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0
-            # 16
-        ]] 
+    
         
     
     # model.show_result function path:  

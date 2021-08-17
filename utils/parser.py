@@ -12,23 +12,19 @@ class TrainParser():
     
     def _parse_args(self, parser):
         ### parser argument must comply with the order of input commands ###
-        parser.add_argument('model', help='used model')
+        parser.add_argument('pose_model', help='used model')
         parser.add_argument('cfgnum', type=int)
-        # parser.add_argument('det', type=str, default=None, help='choice detector the one or all')
-        # parser.add_argument('det_cfgnum', type=int, default=1)
-        parser.add_argument('case', type=str)
         parser.add_argument('dataset', type=str)
-        parser.add_argument('gpus_num')
-        parser.add_argument('devices', type=str, default=None, help='the specific gpus not consecutive order')
+        parser.add_argument('case', type=str)
+        parser.add_argument('numgpus', type=int)
         ####################################################################
-
-        
+        parser.add_argument('--devices', type=str, default=None, help='the specific gpus not consecutive order')
         parser.add_argument('--weights', default=None, type=str, help='set specific weights')
         parser.add_argument('--seed', type=int, default=None, help='random seed')
         parser.add_argument('--local_rank', type=int, default=0)
         parser.add_argument('--no-pret', action='store_true')
-        parser.add_argument('--worker-unit', type=int)
-        parser.add_argument('--samples', type=int, default=32)
+        parser.add_argument('--num-worker', type=int)
+        parser.add_argument('--samples_per_gpu', type=int, default=32)
 
         parser.add_argument(
             '--work-dir',

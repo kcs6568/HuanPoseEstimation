@@ -8,8 +8,7 @@ evaluation = dict(interval=50, metric='mAP', key_indicator='AP')
 
 optimizer = dict(
     type='Adam',
-    # lr=0.0015,
-    lr=0.001
+    lr=0.0015,
 )
 optimizer_config = dict(grad_clip=None)
 # learning policy
@@ -17,8 +16,7 @@ lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=500,
-    # warmup_ratio=0.001,
-    warmup_ratio=0.1,
+    warmup_ratio=0.001,
     step=[200, 260])
 total_epochs = 300
 log_config = dict(
@@ -38,10 +36,10 @@ channel_cfg = dict(
     ])
 
 data_cfg = dict(
-    image_size=512,
-    base_size=256,
+    image_size=640,
+    base_size=320,
     base_sigma=2,
-    heatmap_size=[128, 256],
+    heatmap_size=[160, 320],
     num_joints=channel_cfg['dataset_joints'],
     dataset_channel=channel_cfg['dataset_channel'],
     inference_channel=channel_cfg['inference_channel'],
@@ -53,7 +51,7 @@ data_cfg = dict(
 model = dict(
     type='AssociativeEmbedding',
     pretrained='https://download.openmmlab.com/mmpose/'
-    'pretrain_models/hrnet_w48-8ef0771d.pth',
+    'pretrain_models/hrnet_w32-36af842e.pth',
     backbone=dict(
         type='HRNet',
         in_channels=3,
@@ -69,28 +67,28 @@ model = dict(
                 num_branches=2,
                 block='BASIC',
                 num_blocks=(4, 4),
-                num_channels=(48, 96)),
+                num_channels=(32, 64)),
             stage3=dict(
                 num_modules=4,
                 num_branches=3,
                 block='BASIC',
                 num_blocks=(4, 4, 4),
-                num_channels=(48, 96, 192)),
+                num_channels=(32, 64, 128)),
             stage4=dict(
                 num_modules=3,
                 num_branches=4,
                 block='BASIC',
                 num_blocks=(4, 4, 4, 4),
-                num_channels=(48, 96, 192, 384))),
+                num_channels=(32, 64, 128, 256))),
     ),
     keypoint_head=dict(
         type='AEHigherResolutionHead',
-        in_channels=48,
+        in_channels=32,
         num_joints=17,
         tag_per_joint=True,
         extra=dict(final_conv_kernel=1, ),
         num_deconv_layers=1,
-        num_deconv_filters=[48],
+        num_deconv_filters=[32],
         num_deconv_kernels=[4],
         num_basic_blocks=4,
         cat_output=[True],
@@ -174,7 +172,7 @@ val_pipeline = [
 
 test_pipeline = val_pipeline
 
-data_root = '/root/data/coco'
+data_root = 'data/coco'
 data = dict(
     samples_per_gpu=16,
     workers_per_gpu=2,

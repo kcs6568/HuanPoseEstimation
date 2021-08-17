@@ -4,75 +4,69 @@ Models:
       coco:
         configs:
           1:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w32_coco_256x192.py'
-          - '/root/data/ckpt/coco/hpe/hrnet_w32_coco_256x192-c78dce93_20200708.pth'
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w32_coco_256x192.py"
+            - "/root/data/ckpt/coco/hpe/hrnet_w32_coco_256x192-c78dce93_20200708.pth"
           2:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w32_coco_384x288.py'
-          - '/root/data/ckpt/coco/hpe/hrnet_w32_coco_384x288-d9f0d786_20200708.pth'
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w32_coco_384x288.py"
+            - "/root/data/ckpt/coco/hpe/hrnet_w32_coco_384x288-d9f0d786_20200708.pth"
           3:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w48_coco_256x192.py'
-          - '/root/data/ckpt/coco/hpe/hrnet_w48_coco_256x192-b9e0b3ab_20200708.pth'
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hrnet_w48_coco_256x192.py"
+            - "/root/data/ckpt/coco/hpe/hrnet_w48_coco_256x192-b9e0b3ab_20200708.pth"
           4:
-          - '/root/mmpose/brl_graph/models/hrnet_w48_coco_384x288.py'
-          - '/root/data/ckpt/coco/hpe/hrnet_w48_coco_384x288-314c8528_20200708.pth'
+            - "/root/mmpose/brl_graph/models/hrnet_w48_coco_384x288.py"
+            - "/root/data/ckpt/coco/hpe/hrnet_w48_coco_384x288-314c8528_20200708.pth"
       mpii:
         configs:
           1:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hrnet_w32_mpii_256x256.py'
-          - 
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hrnet_w32_mpii_256x256.py"
+            -
           2:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hrnet_w48_mpii_256x256.py'
-          - 
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hrnet_w48_mpii_256x256.py"
+            -
   hourglass:
     dataset:
       coco:
         configs:
           1:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hourglass52_coco_256x256.py'
-          - '/root/data/ckpt/coco/hpe/hourglass52_coco_256x256-4ec713ba_20200709.pth'
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hourglass52_coco_256x256.py"
+            - "/root/data/ckpt/coco/hpe/hourglass52_coco_256x256-4ec713ba_20200709.pth"
           2:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hourglass52_coco_384x384.py'
-          - '/root/data/ckpt/coco/hpe/hourglass52_coco_384x384-be91ba2b_20200812.pth'
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/hourglass52_coco_384x384.py"
+            - "/root/data/ckpt/coco/hpe/hourglass52_coco_384x384-be91ba2b_20200812.pth"
       mpii:
         configs:
-          1: 
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hourglass52_mpii_256x256.py'
-          - 
+          1:
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hourglass52_mpii_256x256.py"
+            -
           2:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hourglass52_mpii_384x384.py'
-          - 
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/mpii/hourglass52_mpii_384x384.py"
+            -
   higherhrnet:
     dataset:
       coco:
         configs:
           1:
-          - '/root/mmpose/brl_graph/models/higherhrnet_w48_coco_512x512.py'
-          - '/root/data/ckpt/coco/hpe/higher_hrnet48_coco_512x512-60fedcbc_20200712.pth'
-          2: 
-          - higher_hrnet32_coco_640x640.py
-          - higher_hrnet32_coco_640x640-a22fe938_20200712.pth
+            - "/root/mmpose/brl_graph/models/higherhrnet_w32_coco_512x512.py"
+            - "/root/data/ckpt/coco/hpe/higher_hrnet32_coco_512x512-8ae85183_20200713.pth"
+          2:
+            - "/root/mmpose/brl_graph/models/higherhrnet_w32_coco_640x640.py"
+            - "/root/data/ckpt/coco/hpe/higher_hrnet32_coco_640x640-a22fe938_20200712.pth"
           3:
-          - higher_hrnet48_coco_512x512.py
-          - higher_hrnet48_coco_512x512-60fedcbc_20200712.pth
-          4:
-          - higher_hrnet48_coco_640x640.py
-          - 
+            - "/root/mmpose/brl_graph/models/higherhrnet_w48_coco_512x512.py"
+            - "/root/data/ckpt/coco/hpe/higher_hrnet48_coco_512x512-60fedcbc_20200712.pth"
   rsn:
     dataset:
       coco:
         configs:
           1:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/rsn18_coco_256x192.py'
-          - '/root/data/ckpt/coco/hpe/rsn18_coco_256x192-72f4b4a7_20201127.pth'
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/rsn18_coco_256x192.py"
+            - "/root/data/ckpt/coco/hpe/rsn18_coco_256x192-72f4b4a7_20201127.pth"
           2:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/rsn50_coco_256x192.py'
-          - '/root/data/ckpt/coco/hpe/rsn50_coco_256x192-72ffe709_20201127.pth'
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/rsn50_coco_256x192.py"
+            - "/root/data/ckpt/coco/hpe/rsn50_coco_256x192-72ffe709_20201127.pth"
           3:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/2xrsn50_coco_256x192.py'
-          - '/root/data/ckpt/coco/hpe/2xrsn50_coco_256x192-50648f0e_20201127.pth'
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/2xrsn50_coco_256x192.py"
+            - "/root/data/ckpt/coco/hpe/2xrsn50_coco_256x192-50648f0e_20201127.pth"
           4:
-          - '/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/3xrsn50_coco_256x192.py'
-          - '/root/data/ckpt/coco/hpe/3xrsn50_coco_256x192-58f57a68_20201127.pth'
-          
-           
-          
+            - "/root/mmpose/configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/3xrsn50_coco_256x192.py"
+            - "/root/data/ckpt/coco/hpe/3xrsn50_coco_256x192-58f57a68_20201127.pth"

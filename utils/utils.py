@@ -151,15 +151,15 @@ def make_base_path_for_pose(model, dataset, pose_cfg, pose_ckpt):
     return cfg_base_path, ckpt_base_path
 
 
-def set_specific_gpus(device):
+def set_specific_gpus(devices):
     # device = 'cpu' or '0' or '0,1,2,3'
-    cpu = device.lower() == 'cpu'
+    cpu = devices.lower() == 'cpu'
     
     if cpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # force torch.cuda.is_available() = False
-    elif device:  # non-cpu device requested
-        os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable
-        assert torch.cuda.is_available(), f'CUDA unavailable, invalid device {device} requested'  # check availability
+    elif devices:  # non-cpu device requested
+        os.environ['CUDA_VISIBLE_DEVICES'] = devices  # set environment variable
+        assert torch.cuda.is_available(), f'CUDA unavailable, invalid device {devices} requested'  # check availability
    
 
 def save_error_info(save_path, img_path, img_name):

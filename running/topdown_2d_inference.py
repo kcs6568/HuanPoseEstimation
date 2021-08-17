@@ -38,7 +38,6 @@ def main():
     pose_model = init_pose_model(
         pose_cfg, 
         pose_ckpt,
-        apply_speedup=args().speedup,
         device=args().device.lower())
     assert pose_model.cfg.model.type=='TopDown', "This process is applied to topdown approach"
 

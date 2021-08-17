@@ -57,6 +57,7 @@ def draw_bottomup_pose_results(
     radius,
     thickness,
     dataset,
+    pred_skeleton,
     kpt_score_thr,
     show,
     pose_save_path):
@@ -71,6 +72,7 @@ def draw_bottomup_pose_results(
         radius=radius,
         thickness=thickness,
         dataset=dataset,
+        pred_skeleton=pred_skeleton,
         kpt_score_thr=kpt_score_thr,
         show=show,
         out_file=out_file)
