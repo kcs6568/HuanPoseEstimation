@@ -4,12 +4,13 @@ resume_from = None
 dist_params = dict(backend='nccl')
 workflow = [('train', 1)]
 checkpoint_config = dict(interval=50)
-evaluation = dict(interval=50, metric='mAP', key_indicator='AP')
+evaluation = dict(interval=1, metric='mAP', key_indicator='AP')
 
 optimizer = dict(
     type='Adam',
     lr=0.0015,
 )
+
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
@@ -37,6 +38,7 @@ channel_cfg = dict(
 
 data_cfg = dict(
     image_size=384,
+    # image_size=512,
     base_size=256,
     base_sigma=2,
     # heatmap_size=[128, 256],
@@ -177,8 +179,10 @@ test_pipeline = val_pipeline
 
 data_root = '/root/data/coco'
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=16,
     workers_per_gpu=2,
+    # val_dataloader=dict(samples_per_gpu=1),
+    # test_dataloader=dict(samples_per_gpu=1),
     train=dict(
         type='BottomUpCocoDataset',
         ann_file=f'{data_root}/annotations/person_keypoints_train2017.json',

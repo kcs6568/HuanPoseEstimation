@@ -65,13 +65,13 @@ def check_case_len(case):
     return res
 
 
-def _get_single_image(img_data):
-    single_img = os.path.abspath(img_data)
-    return [single_img]
+# def _get_single_image(img_data):
+#     single_img = os.path.abspath(img_data)
+#     return [single_img]
 
 
-def _get_multi_images(img_data):
-    return multi_imgs
+# def _get_multi_images(img_data):
+#     return multi_imgs
 
 
 def get_image_list(img_data):
@@ -166,4 +166,6 @@ def save_error_info(save_path, img_path, img_name):
     error_save_path = osp.join(save_path, f'{img_name}.png')
     img = mmcv.imread(img_path)
     mmcv.imwrite(img, error_save_path)
+
+
     

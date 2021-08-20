@@ -16,3 +16,10 @@ class ImageDataNotLoadedError(Exception):
         super(ImageDataNotLoadedError, self).__init__(message)
 
 
+class GPUNumberNotMatchError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super(GPUNumberNotMatchError, self).__init__(message)
+        
+
+

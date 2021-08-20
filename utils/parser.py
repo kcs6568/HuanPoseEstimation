@@ -8,7 +8,8 @@ class TrainParser():
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='mmpose test model')
         self.args = self._parse_args(self.parser)
-
+        self.args = self._set_pre_conditions(self.args)
+    
     
     def _parse_args(self, parser):
         ### parser argument must comply with the order of input commands ###
@@ -18,13 +19,14 @@ class TrainParser():
         parser.add_argument('case', type=str)
         parser.add_argument('numgpus', type=int)
         ####################################################################
+        # parser.add_argument('master_port', type=int, default=-29500)
         parser.add_argument('--devices', type=str, default=None, help='the specific gpus not consecutive order')
         parser.add_argument('--weights', default=None, type=str, help='set specific weights')
         parser.add_argument('--seed', type=int, default=None, help='random seed')
         parser.add_argument('--local_rank', type=int, default=0)
         parser.add_argument('--no-pret', action='store_true')
-        parser.add_argument('--num-worker', type=int)
-        parser.add_argument('--samples_per_gpu', type=int, default=32)
+        parser.add_argument('--num-worker', type=int, default=2)
+        parser.add_argument('--samples_per_gpu', type=int, default=16)
 
         parser.add_argument(
             '--work-dir',
@@ -71,9 +73,16 @@ class TrainParser():
             help='automatically scale lr with the number of gpus')
 
         args = parser.parse_args()
+        
+        return args
+
+
+    def _set_pre_conditions(self, args):
         if 'LOCAL_RANK' not in os.environ:
             os.environ['LOCAL_RANK'] = str(args.local_rank)
-        
+        if args.numgpus == 1:
+            args.num_worker = 0
+
         return args
 
 

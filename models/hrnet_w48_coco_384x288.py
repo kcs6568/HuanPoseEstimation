@@ -4,7 +4,7 @@ resume_from = None
 dist_params = dict(backend='nccl')
 workflow = [('train', 1)]
 checkpoint_config = dict(interval=10)
-evaluation = dict(interval=10, metric='mAP', key_indicator='AP')
+evaluation = dict(interval=1, metric='mAP', key_indicator='AP')
 
 optimizer = dict(
     type='Adam',
@@ -20,7 +20,7 @@ lr_config = dict(
     step=[170, 200])
 total_epochs = 210
 log_config = dict(
-    interval=50,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
@@ -101,7 +101,7 @@ data_cfg = dict(
     vis_thr=0.2,
     use_gt_bbox=False,
     det_bbox_thr=0.0,
-    bbox_file='data/coco/person_detection_results/'
+    bbox_file='/root/data/coco/person_detection_results/'
     'COCO_val2017_detections_AP_H_56_person.json',
 )
 
@@ -149,12 +149,12 @@ val_pipeline = [
 
 test_pipeline = val_pipeline
 
-data_root = 'data/coco'
+data_root = '/root/data/coco'
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=16,
     workers_per_gpu=2,
-    val_dataloader=dict(samples_per_gpu=32),
-    test_dataloader=dict(samples_per_gpu=32),
+    val_dataloader=dict(samples_per_gpu=16),
+    test_dataloader=dict(samples_per_gpu=16),
     train=dict(
         type='TopDownCocoDataset',
         ann_file=f'{data_root}/annotations/person_keypoints_train2017.json',

@@ -46,30 +46,22 @@ def set_env_cfg_info(args):
 def main():
     args = TrainParser()
 
+    # args().set_pre_condition()
+    # args = execute_pre_condition(args, *args)
+
     # if args().devices is not None:
     #     assert args().gpusnum == len(args().devices.split(","))
     #     set_specific_gpus(args().devices)
 
     cfg_path = '/root/mmpose/brl_graph/models/cfg_list.yaml'
-    pose_cfg, _ = get_base_pose_info(cfg_path, args().pose_model, args().dataset, args().cfgnum)
-
-    cfg = Config.fromfile(pose_cfg) 
-    pose_cfg_name = osp.splitext(osp.basename(pose_cfg))[0]
+    pose_cfg_file, _ = get_base_pose_info(cfg_path, args().pose_model, args().dataset, args().cfgnum)
+    cfg = Config.fromfile(pose_cfg_file) 
+    pose_cfg_name = osp.splitext(osp.basename(pose_cfg_file))[0]
 
     cfg_options={
-        'cfg.data.samples_per_gpu': args().samples_per_gpu,
-        'cfg.data.workers_per_gpu': cfg.data.workers_per_gpu * args().numgpus
-    }  
-
-    # cfg.merge_from_dict(cfg_options)
-
-    cfg.data.samples_per_gpu = args().samples_per_gpu
-    cfg.data.workers_per_gpu *= args().num_worker
-
-    # if args().cfg_options is not None:
-    #     print("set cfg options")
-    #     cfg.merge_from_dict(args().cfg_options)
-
+        'data.samples_per_gpu': args().samples_per_gpu,
+        'data.workers_per_gpu': args().num_worker * args().numgpus}  
+    cfg.merge_from_dict(cfg_options)
 
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
@@ -132,7 +124,10 @@ def main():
     meta['env_info'] = env_info
 
     # log some basic info
+    master_addr = os.environ['MASTER_ADDR']
+    master_port = os.environ['MASTER_PORT']
     logger.info(f'Distributed training: {distributed}')
+    logger.info(f'Master Address: {master_addr} / Master Port: {master_port}')
     # logger.info(f'Config:\n{cfg.pretty_text}')
     
     # set random seeds
