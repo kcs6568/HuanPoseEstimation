@@ -4,13 +4,12 @@ import argparse
 import copy
 import os.path as osp
 import time
-
 import torch
 
-import torch.optim as optim
+# import torch.optim as optim
 
 import mmcv
-from mmcv import Config, DictAction
+from mmcv import Config
 from mmcv.runner import init_dist, set_random_seed
 from mmcv.utils import get_git_hash
 from mmcv.parallel import MMDistributedDataParallel, MMDataParallel
@@ -27,6 +26,7 @@ from mmpose.core.distributed_wrapper import DistributedDataParallelWrapper
 
 from brl_graph.utils.utils import *
 from brl_graph.utils.parser import TrainParser
+# from brl_graph.utils.save import dump_hyp
 
 
 def set_env_cfg_info(args):
@@ -68,6 +68,7 @@ def main():
     cfg_path = '/root/mmpose/brl_graph/models/cfg_list.yaml'
     pose_cfg, _ = get_base_pose_info(cfg_path, args().pose_model, args().dataset, args().cfgnum)
     cfg = Config.fromfile(pose_cfg) 
+
     pose_cfg_name = osp.splitext(osp.basename(pose_cfg))[0]
 
     cfg_options={
@@ -111,7 +112,9 @@ def main():
         cfg.gpu_ids = range(args().numgpus) if args().gpus is None else range(args().gpus)
     
     work_dir = f'/root/volume/{args().dataset}/train_results/{pose_cfg_name}/{case}/'
+    cfg['work_dir'] = work_dir
     mmcv.mkdir_or_exist(osp.abspath(work_dir))
+    mmcv.mkdir_or_exist(osp.abspath(work_dir+'ckpts'))
     mmcv.mkdir_or_exist(osp.abspath(work_dir+'logs'))
 
     # init the logger before other steps
@@ -193,8 +196,6 @@ def main():
             model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
    
 
-    # if cfg.optimizer.type == 'Adam':
-    #     optimizer = optim.Adam(model.parameters(), lr=cfg.optimizer.lr)
     # build runner
     optimizer = build_optimizers(model, cfg.optimizer) 
 
@@ -212,6 +213,7 @@ def main():
         # of the model, so the runner should NOT include optimizer hook.
         cfg.optimizer_config = None
 
+    cfg.checkpoint_config['out_dir'] = f'{work_dir}/ckpts'
     runner.register_training_hooks(
         lr_config=cfg.lr_config, # optimizer scheduler
         optimizer_config=cfg.optimizer_config, # optimizer information
@@ -227,8 +229,8 @@ def main():
         eval_cfg = cfg.get('evaluation', {})
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
         dataloader_setting = dict(
-            samples_per_gpu=1,
-            workers_per_gpu=1,
+            samples_per_gpu=16,
+            workers_per_gpu=2,
             # cfg.gpus will be ignored if distributed
             num_gpus=len(cfg.gpu_ids),
             dist=distributed,
@@ -236,24 +238,24 @@ def main():
             shuffle=False)
         dataloader_setting = dict(dataloader_setting,
                                   **cfg.data.get('val_dataloader', {}))
-       
-        print("val dataloader setting")
-        print(dataloader_setting)
+        cfg.val_settings = dataloader_setting
+
         val_dataloader = build_dataloader(val_dataset, **dataloader_setting)
-        print("val dataloader")
-        print(val_dataloader)
-        print("val dataloader info")
-        print(len(val_dataloader))
-        print(dir(val_dataloader))
         eval_hook = DistEvalHook if distributed else EvalHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
-
+    print(cfg.lr_config.items())
+    print(type(cfg.lr_config.items()))
     if cfg.resume_from:
-        runner.resume(cfg.resume_from)
+        runner.resume(args().resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
-    # exit()
+
+    #TODO hyp 저장 코드 수정
+    # if args().dump_hyp:
+    #     dump_hyp(args(), cfg)
+    #     exit()
+
     runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
     # total_loss = runner.get_total_loss()
 

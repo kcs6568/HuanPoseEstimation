@@ -27,13 +27,14 @@ class TrainParser():
         parser.add_argument('--no-pret', action='store_true')
         parser.add_argument('--num-worker', type=int, default=2)
         parser.add_argument('--samples_per_gpu', type=int, default=16)
+        parser.add_argument('--dump-hyp', action='store_false')
+        parser.add_argument('--resume-from', default=None, help='the checkpoint file to resume from')
 
         parser.add_argument(
             '--work-dir',
             action='store_false',
             help='the dir to save logs and models')
-        parser.add_argument(
-            '--resume-from', help='the checkpoint file to resume from')
+        
         parser.add_argument(
             '--no-validate',
             action='store_true',
