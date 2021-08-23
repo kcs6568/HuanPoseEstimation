@@ -95,7 +95,7 @@ model = dict(
         num_deconv_filters=[32],
         num_deconv_kernels=[4],
         num_basic_blocks=4,
-        cat_output=[True],
+        cat_output=[True], # concatenate all heatmap outputs
         with_ae_loss=[True, False],
         # mmpose->models->losses->multi_loss_factory.py
         loss_keypoint=dict(

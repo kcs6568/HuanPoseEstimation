@@ -229,8 +229,10 @@ def main():
         eval_cfg = cfg.get('evaluation', {})
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
         dataloader_setting = dict(
-            samples_per_gpu=16,
-            workers_per_gpu=2,
+            # validation sample이 1이 아닐 때 size runtime error 발생
+            # RuntimeError: stack expects each tensor to be equal size, but got [428, 640, 3] at entry 0 and [500, 375, 3] at entry 1
+            samples_per_gpu=1,
+            workers_per_gpu=1,
             # cfg.gpus will be ignored if distributed
             num_gpus=len(cfg.gpu_ids),
             dist=distributed,
@@ -244,7 +246,6 @@ def main():
         eval_hook = DistEvalHook if distributed else EvalHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
-    print(cfg.lr_config.items())
     print(type(cfg.lr_config.items()))
     if cfg.resume_from:
         runner.resume(args().resume_from)

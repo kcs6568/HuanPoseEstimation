@@ -61,6 +61,7 @@ def get_distance(pose_results):
         adj_dist = np.zeros(shape=(len(person_kpt), len(person_kpt)))
         limblist = []
 
+
         for kid, loc in enumerate(person_kpt):
             if kid == len(person_kpt)-1:
                 break
