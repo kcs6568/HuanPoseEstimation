@@ -1,55 +1,35 @@
+import enum
 import logging
 import os
 import argparse
 import copy
 import os.path as osp
+from subprocess import check_output
 import time
-import torch
 
-# import torch.optim as optim
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 
 import mmcv
 from mmcv import Config
 from mmcv.runner import init_dist, set_random_seed
-from mmcv.utils import get_git_hash
+from mmcv.runner import EpochBasedRunner, DistSamplerSeedHook, OptimizerHook
 from mmcv.parallel import MMDistributedDataParallel, MMDataParallel
-from mmcv.runner import EpochBasedRunner, DistSamplerSeedHook
 
-from mmpose import __version__
-from mmpose.apis import train_model
-from mmpose.models import build_posenet
-from mmpose.utils import collect_env, get_root_logger
+from mmpose.models import backbones, build_posenet
+from mmpose.models.detectors.associative_embedding import AssociativeEmbedding
 from mmpose.datasets import build_dataloader, build_dataset
-from mmpose.core import DistEvalHook, EvalHook, build_optimizers
+from mmpose.utils import collect_env, get_root_logger
 from mmpose.core.distributed_wrapper import DistributedDataParallelWrapper
+from mmpose.core import DistEvalHook, EvalHook, build_optimizers
 
 from brl_graph.utils.utils import *
 from brl_graph.utils.parser import TrainParser
-# from brl_graph.utils.save import dump_hyp
+from brl_graph.graph.iterative_graph import IterativeGraph
+from brl_graph.graph.graph_runner import train_model, GraphRunner
 
-
-def set_env_cfg_info(args):
-    env_cfg_info_dict = {
-        'Info. List': '     ',
-        'Training Model': args.pose_model,
-        'Dataset': args.dataset,
-        'Config Number': args.cfgnum,
-        'Specific-GPUs?': args.devices,
-        'Training Case': args.case,
-        'Is no pretrained?': args.no_pret,
-        'GPUs(at the single GPU)': args.gpus,
-        'GPU-IDs(at the single GPU)': args.gpu_ids,
-        'Deterministic': args.deterministic,
-        'Config_Options': args.cfg_options,
-        'Launcher': args.launcher,
-        'Autoscale_LR': args.autoscale_lr,
-        'Local Rank': os.environ['LOCAL_RANK'],
-        'Rank': os.environ['RANK']
-    }
-
-    arg_info = '\n'.join([(f'{k}: {v}') for k, v in env_cfg_info_dict.items()])
-
-    return arg_info
 
 
 def main():
@@ -72,11 +52,14 @@ def main():
 
     cfg_options={
         'data_root': '/root/data/coco',
-        'data.samples_per_gpu': args().samples_per_gpu}
-    if cfg.model.type=='TopDown':
-        cfg_options['data.val_dataloader.samples_per_gpu'] = args().samples_per_gpu
-        cfg_options['data.test_dataloader.samples_per_gpu'] = args().samples_per_gpu
+        'data.samples_per_gpu': args().samples_per_gpu,
+        'data.workers_per_gpu': cfg.data.workers_per_gpu * args().numgpus}
+    # if cfg.model.type=='TopDown':
+    #     cfg_options['data.val_dataloader.samples_per_gpu'] = args().samples_per_gpu
+    #     cfg_options['data.test_dataloader.samples_per_gpu'] = args().samples_per_gpu
     cfg.merge_from_dict(cfg_options)
+
+    print(f'samples: {cfg.data.samples_per_gpu} / workers: {cfg.data.workers_per_gpu}')
 
     if args().case.isdigit():
         case_num = check_case_len(args().case)
@@ -95,7 +78,7 @@ def main():
         cfg.model.pretrained=args().weights
     if args().autoscale_lr:
         # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
-        cfg.optimizer['lr'] = cfg.optimizer['lr'] * len(cfg.gpu_ids) / 8
+        cfg.graph_optimizer['lr'] = cfg.graph_optimizer['lr'] * len(cfg.gpu_ids) / 8
     if args().no_pret:
         cfg.model.pretrained=None
 
@@ -126,7 +109,7 @@ def main():
     meta = dict()
     # log env info
     env_cfg_info_dict = dict()
-    env_cfg_info_dict = set_env_cfg_info(args())
+    # env_cfg_info_dict = set_env_cfg_info(args())
 
     env_info_dict = collect_env(env_cfg_info_dict)
     env_info = '\n'.join([(f'{k}: {v}') for k, v in env_info_dict.items()])
@@ -151,11 +134,12 @@ def main():
     cfg.seed = args().seed
     meta['seed'] = args().seed
 
-    model = build_posenet(cfg.model)
-    ############## end backbone loading ####################
+    logger.info("Make Graph Iterative Network")
+    num_joints = cfg.model.keypoint_head.num_joints
+    model = GraphRunner(cfg.model, num_joints)
+
     logger.info("Set Data Loader")
     datasets = [build_dataset(cfg.data.train)]
-    # prepare data loaders
     dataset = datasets if isinstance(datasets, (list, tuple)) else [datasets]
     dataloader_setting = dict(
         samples_per_gpu=cfg.data.get('samples_per_gpu', {}),
@@ -166,25 +150,24 @@ def main():
         seed=cfg.seed)
     dataloader_setting = dict(dataloader_setting,
                               **cfg.data.get('train_dataloader', {}))
-    # mmpose.datasets.datasets.bottom_up.bottom_up_coco.py->BottomUpCocoDataset
-    
     data_loaders = [
         build_dataloader(ds, **dataloader_setting) for ds in dataset
     ]
     logger.info(f'DataLoader: {data_loaders}')
+
 
     use_adverserial_train = cfg.get('use_adversarial_train', False)
     if distributed:
         find_unused_parameters = cfg.get('find_unused_parameters', True)
         if use_adverserial_train:
             # Use DistributedDataParallelWrapper for adversarial training
-            model = DistributedDataParallelWrapper(
+            backbone = DistributedDataParallelWrapper(
                 model,
                 device_ids=[torch.cuda.current_device()],
                 broadcast_buffers=False,
                 find_unused_parameters=find_unused_parameters)
         else:
-            logger.info('MMDDP Settings')
+            logger.info('MMDDP Backbone and Model Settings')
             model = MMDistributedDataParallel(
                 model.cuda(),
                 device_ids=[torch.cuda.current_device()],
@@ -194,34 +177,38 @@ def main():
     else:
         model = MMDataParallel(
             model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
-   
 
-    # build runner
-    optimizer = build_optimizers(model, cfg.optimizer) 
 
+    optimizer = build_optimizers(model, cfg.graph_optimizer) 
     logger.info("Program Main Runner Initialization")
-    runner = EpochBasedRunner(
+    model_runner = EpochBasedRunner(
         model,
         optimizer=optimizer,
         work_dir=work_dir,
         logger=logger,
         meta=meta)
-    runner.timestamp = timestamp
+    model_runner.timestamp = timestamp
 
     if use_adverserial_train:
         # The optimizer step process is included in the train_step function
         # of the model, so the runner should NOT include optimizer hook.
-        cfg.optimizer_config = None
+        optimizer_config = None
+    else:
+        if distributed and 'type' not in cfg.graph_optimizer_config:
+            # same as EpochBasedRunner optimizer
+            optimizer_config = OptimizerHook(**cfg.graph_optimizer_config)
+        else:
+            optimizer_config = cfg.graph_optimizer_config
 
     cfg.checkpoint_config['out_dir'] = f'{work_dir}/ckpts'
-    # runner.register_training_hooks(
-    #     lr_config=cfg.lr_config, # optimizer scheduler
-    #     optimizer_config=cfg.optimizer_config, # optimizer information
-    #     checkpoint_config=cfg.checkpoint_config,
-    #     log_config=cfg.log_config)
+    model_runner.register_training_hooks(
+        lr_config=cfg.lr_config, # optimizer scheduler
+        optimizer_config=optimizer_config, # optimizer information
+        checkpoint_config=cfg.checkpoint_config,
+        log_config=cfg.log_config)
 
     if distributed:
-        runner.register_hook(DistSamplerSeedHook())
+        model_runner.register_hook(DistSamplerSeedHook())
 
     # loading validation dataset
     if not args().no_validate:
@@ -244,22 +231,67 @@ def main():
 
         val_dataloader = build_dataloader(val_dataset, **dataloader_setting)
         eval_hook = DistEvalHook if distributed else EvalHook
-        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+        model_runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
-    print(type(cfg.lr_config.items()))
     if cfg.resume_from:
-        runner.resume(args().resume_from)
+        model_runner.resume(args().resume_from)
     elif cfg.load_from:
-        runner.load_checkpoint(cfg.load_from)
+        model_runner.load_checkpoint(cfg.load_from)
 
-    #TODO hyp 저장 코드 수정
-    # if args().dump_hyp:
-    #     dump_hyp(args(), cfg)
-    #     exit()
+    model_runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
 
-    runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
-    # total_loss = runner.get_total_loss()
 
+    # optimizer = optim.SGD(model.parameters(), lr=0.01)
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5)
+    # cls_loss = nn.CrossEntropyLoss()
+    # reg_loss = nn.L1Loss()
+    
+    # logger.info("Start Model Training")
+    # for epoch in range(cfg.total_epochs):
+    #     model.train()
+    #     losses = torch.tensor(0.)
+
+    #     for iter, data_batch in enumerate(data_loaders[0]):
+    #         pred_loc, target_loc = model.train_step(data_batch, optimizer)
+
+    #         for pred, target in zip(pred_loc, target_loc):
+    #             losses += reg_loss(pred, target)
+
+    #         # losses.backward()
+    #         optimizer.step()
+
+        # train_model(
+        #     backbone,
+        #     model,
+        #     optimizer,
+        #     reg_loss,
+        #     data_loaders[0]
+        # )
+
+        # for iter, batch in enumerate(data_loaders[0]):
+        #     losses = torch.tensor(0.)
+        #     optimizer.zero_grad()
+        #     low_res, high_res = backbone(
+        #         batch['img'],
+        #         batch['targets'],
+        #         batch['masks'],
+        #         batch['joints'])
+
+        #     ####################
+        #     # data preprocessing
+        #     ####################
+        #     loc_pred, loc_targets = model.module(batch['targets'][1], high_res)
+        #     for pred, target in zip(loc_pred, loc_targets):
+        #         losses += reg_loss(pred, target)
+        #     # loss = reg_loss(loc_pred, loc_targets)
+        #     losses.backward()
+        #     optimizer.step()
+            
+            
+        # scheduler.step()
+        # print(f"{epoch+1} training clear")
+
+    
 
 if __name__ == '__main__':
     main()

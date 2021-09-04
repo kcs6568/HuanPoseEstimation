@@ -79,7 +79,7 @@ def init_pose_model(config, checkpoint=None, device='cuda:0'):
     elif not isinstance(config, mmcv.Config):
         raise TypeError('config must be a filename or Config object, '
                         f'but got {type(config)}')
-    config.model.pretrained = None
+    # config.model.pretrained = None
     
     # config.channel_cfg['num_output_channels'] = 1
     # config.channel_cfg['dataset_joints'] = 1

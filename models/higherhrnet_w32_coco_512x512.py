@@ -10,8 +10,12 @@ optimizer = dict(
     type='Adam',
     lr=0.0015,
 )
+graph_optimizer = dict(
+    type='SGD',
+    lr=0.01
+)
 
-optimizer_config = dict(grad_clip=None)
+graph_optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
     policy='step',
@@ -21,7 +25,7 @@ lr_config = dict(
     step=[100, 160])
 total_epochs = 200
 log_config = dict(
-    interval=100,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook')
@@ -179,7 +183,7 @@ test_pipeline = val_pipeline
 
 data_root = '/root/data/coco'
 data = dict(
-    samples_per_gpu=16,
+    samples_per_gpu=2,
     workers_per_gpu=2,
     # val_dataloader=dict(samples_per_gpu=1),
     # test_dataloader=dict(samples_per_gpu=1),

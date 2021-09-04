@@ -1,16 +1,21 @@
+import os
+import os.path as osp
 import numpy as np
-import copy, math
-import torch
+
 import mmcv
 
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
 
-# class GraphMaker(nn.Module):
-#     def __init__():
+
+
+
+
 
 
 def get_distance(pose_results):
-
-
     kpt_results = np.random.rand(1, 17, 2)
 
     # kpt 하나 추출
@@ -42,8 +47,7 @@ def get_distance(pose_results):
         [7,9], [7, 13],
         [8, 10], [9, 11],
         [12, 13], [12, 14], [14, 16],
-        [13, 15], [15, 17]
-    ]
+        [13, 15], [15, 17]]
 
     one_link_kpt = [9, 10, 15, 16]
     two_link_kpt = [0, 3, 4, 7, 8, 13, 14]
@@ -60,7 +64,6 @@ def get_distance(pose_results):
         person_kpt = copy.deepcopy(pred_kpt['keypoints'])
         adj_dist = np.zeros(shape=(len(person_kpt), len(person_kpt)))
         limblist = []
-
 
         for kid, loc in enumerate(person_kpt):
             if kid == len(person_kpt)-1:
@@ -174,7 +177,7 @@ def get_graph_loss(gt, pred):
 
     for img_idx, person in enumerate(pred):
         pred_tmp = np.zeros(shape=(kpt_len, kpt_len))
-
+        limblist = []
         '''
         person: [x, y, score]
         '''
@@ -247,10 +250,9 @@ def get_graph_loss(gt, pred):
         #         target_kid += 1
         #     gt_dist_adj[kid][kid], pred_dist_adj[kid][kid] = 0, 0
 
-        f
 
-        adj_distance.append(adj_dist)
-        skeleton.append(limblist)
+        # adj_distance.append(adj_dist)
+        # skeleton.append(limblist)
         # print(adj_dist)
         # print(kpt_adj) 
 
@@ -261,7 +263,157 @@ def get_graph_loss(gt, pred):
         # print(skeleton)
         # exit()
 
-    
-
     return skeleton
 
+
+class IterativeGraph(nn.Module):
+    def __init__(
+        self,
+        in_channels,
+        hid_channels,
+        out_channels,
+        dropout=0.2,
+        bias=False):
+        super(IterativeGraph, self).__init__()
+
+        self.layer1 = nn.Linear(in_channels, hid_channels)
+        # self.norm_layer1 = nn.LayerNorm(hid_channels)
+        self.layer2 = nn.Linear(hid_channels, out_channels)
+        self.dropout = dropout
+
+
+    def train_step(self, data_batch, optimizer, **kwargs):
+        losses = self.forward(**data_batch)
+        
+        loss, log_vars = self._parse_losses(losses)
+
+        outputs = dict(
+            loss=loss,
+            log_vars=log_vars,
+            num_samples=len(next(iter(data_batch.values()))))
+
+        return outputs
+
+    def forward(self, x):
+        out = F.relu(self.layer1(x))
+        out = F.dropout(out, self.dropout, training=self.training)
+        out = self.layer2(out)
+    
+
+        return F.log_softmax(out)
+
+
+    def get_gt_kpt_loc(self, gt_heatmap):
+        gt_loc = []
+
+        '''
+        output(same as gt) is list type and it has 2 elements of torch.Tensor type
+        N: the batch size of input
+        0 element: low resolution result of keypoint heatmap with keypoint tag (N, 34, 128 ,128)
+        1 element: high resolution result of keypoint heatmap (N, 17, 256, 256)
+        '''
+
+        # lower heatmap resolution kpt
+        # for batch_idx, img in enumerate(gt_heatmap[0]): 
+        #     tmp = []
+        #     for kpt_idx, heat_kpt in enumerate():
+        #         heat_kpt = heat_kpt.cpu().data.numpy()
+        #         # max_value = np.max(heat_kpt)
+        #         assert np.count_nonzero(heat_kpt==np.max(heat_kpt))==1
+        #         kpt_loc = list(np.unravel_index(heat_kpt.argmax(), heat_kpt.shape))
+
+        # higher heatmap resolution kpt
+
+        # for imgid, img in enumerate(targets[0]):
+        #     for idx, heat in enumerate(img):
+        #         max_v = torch.max(heat) # all heatmap pixel
+        #         if max_v <= 0:
+        #             continue
+
+        #         for col_idx, col in enumerate(heat):
+        #             col_copy = copy.deepcopy(col)
+        #             col_copy = col_copy.cpu().data.numpy()
+        #             count = np.count_nonzero(col_copy==int(max_v))
+        #             if torch.max(col) == max_v:
+        #                 max_r = torch.argmax(col) # one colume pixel
+        #                 tmp.append([imgid, idx, (col_idx, int(max_r)), int(max_v), count])
+        
+        for batch_idx, img in enumerate(gt_heatmap[1]): # per image
+            tmp = []
+            
+            for kpt_idx, heat_kpt in enumerate(img): # heatmap
+                max_score = torch.max(heat_kpt).cpu().data.numpy()
+                heat_cp = heat_kpt.cpu().data.numpy()
+                kpt_loc = list(np.unravel_index(heat_cp.argmax(), heat_cp.shape))
+                kpt_loc.append(max_score)
+                tmp.append(kpt_loc)
+                # count = 0
+                # heat_kpt = heat_kpt.cpu().data.numpy()
+                # max_value = np.max(heat_kpt)
+                # print(np.count_nonzero(heat_kpt==np.max(heat_kpt)))
+                # assert np.count_nonzero(heat_kpt==np.max(heat_kpt))==1
+                # kpt_loc = list(np.unravel_index(heat_kpt.argmax(), heat_kpt.shape)) # return max coord.
+                # tmp.append(kpt_loc)
+                # print(kpt_loc)
+                # print("max:", np.max(heat_kpt))
+                # max_score = torch.max(heat_kpt)
+                # if max_score <= 0:
+                #     continue
+                # for col, v in enumerate(heat_kpt):
+                #     col_cp = copy.deepcopy(v)
+                #     col_cp = col_cp.cpu().data.numpy()
+
+                #     count += np.count_nonzero(col_cp == float(max_score))
+                #     if torch.max(v) == max_score:
+                #         max_r = torch.argmax(v)
+                #         tmp.append([batch_idx, kpt_idx, (col, int(max_r)), float(max_score)])
+                # tmp.extend([count])
+            gt_loc.append(tmp)
+            # print(tmp)
+            # print()
+
+        assert len(gt_loc) == gt_heatmap[0].size(0)
+        return gt_loc
+
+
+
+
+    def get_pred_kpt_loc(self, pred_heatmap):
+        pred_loc = []
+
+        import copy
+        for batch_idx, img in enumerate(pred_heatmap[1]): # per image
+            tmp = []
+            
+            for kpt_idx, heat_kpt in enumerate(img): # heatmap
+                max_score = torch.max(heat_kpt).cpu().data.numpy()
+                heat_cp = heat_kpt.clone().cpu().data.numpy()
+                kpt_loc = list(np.unravel_index(heat_cp.argmax(), heat_cp.shape))
+                kpt_loc.append(max_score)
+                tmp.append(kpt_loc)
+
+                # count = 0
+                # heat_kpt = heat_kpt.cpu().data.numpy()
+                # max_value = np.max(heat_kpt)
+                # print(np.count_nonzero(heat_kpt==np.max(heat_kpt)))
+                # assert np.count_nonzero(heat_kpt==np.max(heat_kpt))==1
+                # kpt_loc = list(np.unravel_index(heat_kpt.argmax(), heat_kpt.shape)) # return max coord.
+                # tmp.append(kpt_loc)
+                # print(kpt_loc)
+                # print("max:", np.max(heat_kpt))
+            #     max_score = torch.max(heat_kpt)
+            #     if max_score <= 0:
+            #         continue
+
+            #     for col, v in enumerate(heat_kpt):
+            #         col_cp = v.clone()
+            #         col_cp = col_cp.cpu().data.numpy()
+            #         count += np.count_nonzero(col_cp == float(max_score))
+            #         if torch.max(v) == max_score:
+            #             max_r = torch.argmax(v)
+            #             tmp.append([batch_idx, kpt_idx, (col, int(max_r)), float(max_score)])
+            #     tmp.extend([count])
+            pred_loc.append(tmp)
+            # print(tmp)
+            # print()
+        return pred_loc
